@@ -3,7 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#15181B">
+<meta name="theme-color" content="#F2C200">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KB Counter">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>KB Junction Counter</title>
 </head>
@@ -25,7 +32,7 @@
   --bg:#111417; --surface:#1B1F23; --ink:#ECEFEA; --muted:#9BA4AC; --line:#2F353B;
   --tarmac:#454B52; --verge:#1F2A22; --lane:#C9CCC6; --marking:#F5C518; --on-marking:#1B1700;
   --go:#38B26A; --stop:#E5574C; --amber:#F0A92A; --toucan:#3FBF6E; --voi:#F06C80; color-scheme:dark}
-html,body{background:var(--bg);color:var(--ink)}
+html,body{background:var(--bg);color:var(--ink);overscroll-behavior-y:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 body{font-family:var(--body);font-variant-numeric:tabular-nums;font-size:16px;line-height:1.45;padding-inline:16px;padding-block:0 40px}
 #app{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 button{font:inherit;color:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;cursor:pointer}
@@ -104,6 +111,8 @@ ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .cls.on .ch{color:var(--on-marking)}
 .cls.voi .cl{color:var(--voi)}
 .cls.voi.on .cl{color:var(--on-marking)}
+.last{font-size:13px;color:var(--muted);margin-top:-8px;min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.last b{color:var(--ink)}
 .next{font-size:14px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .next b{font-family:var(--display)}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px;border-radius:14px;background:var(--tarmac);transition:box-shadow .15s}
@@ -151,16 +160,13 @@ textarea,input[type=text]{width:100%;box-sizing:border-box;font:inherit;border:1
 table.sum{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 table.sum td,table.sum th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
 table.sum td:last-child,table.sum th:last-child{text-align:right;font-family:var(--mono)}
-.filelist{display:flex;flex-direction:column;gap:6px;font-size:14px}
-.filelist div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding-bottom:6px;min-width:0}
-.filelist span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 </style>
 
 <div class="top-band" aria-hidden="true"></div>
 <main id="app"></main>
 <div id="toast" role="status" hidden></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="xlsx.full.min.js"></script>
 <script>
 /* ---------- junction model ---------- */
 const NAMES=['Harry O','Murray','Harry J','Ciaran','Joseph','Ollie'];
@@ -242,8 +248,10 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){storage
 function fresh(){return {session:null,events:[],station:null,sel:'car',who:'Pedestrian',queue:{N:0,E:0,S:0,W:0},timers:[],screen:'setup'}}
 let S=load()||fresh();
 try{localStorage.setItem(KEY+'.t','1');localStorage.removeItem(KEY+'.t')}catch(e){storageOK=false}
-let draft={obs:S.session?.obs||null,wx:null};
-let brief=null; let confirmNew=false; let combineFiles=[]; let combineEvents=[];
+const LAST=KEY+'.last';
+function lastPick(){try{return JSON.parse(localStorage.getItem(LAST))||{}}catch(e){return {}}}
+let draft={obs:S.session?.obs||lastPick().obs||null,wx:null};
+let brief=null; let confirmNew=false;
 
 const $=s=>document.querySelector(s);
 const pad=n=>String(n).padStart(2,'0');
@@ -261,6 +269,7 @@ function log(k,f){const e=Object.assign({id:uid(),t:Date.now(),k,st:S.station,ob
 function sesEv(){return S.events.filter(e=>e.ses===S.session?.id)}
 const TAPK={veh:['veh'],ped:['ped'],sig:['sig']};
 function stationTotal(st){const ks=TAPK[STN[st].role];return sesEv().filter(e=>e.st===st&&ks.includes(e.k)).length}
+function lastEntry(){const ev=S.events;for(let i=ev.length-1;i>=0;i--){const e=ev[i];if(e.ses===S.session?.id&&e.st===S.station&&!['on','off','note'].includes(e.k))return e}return null}
 function sigState(h){const ev=sesEv().filter(e=>e.k==='sig'&&e.h===h);return ev.length?ev[ev.length-1]:null}
 
 function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,1600)}
@@ -325,7 +334,6 @@ function render(){
   else if(S.screen==='pick')app.innerHTML=warn+pickHTML();
   else if(S.screen==='count'){app.innerHTML=warn+countHTML();refresh();keepAwake()}
   else if(S.screen==='end')app.innerHTML=warn+endHTML();
-  else if(S.screen==='combine')app.innerHTML=combineHTML();
   renderSheet();
 }
 function setupHTML(){
@@ -335,7 +343,7 @@ function setupHTML(){
     return head+`<section class="card"><span class="eyebrow">Session in progress</span>
       <h2>${esc(live.obs)}</h2><p class="muted">Started ${fT(live.start)} on ${fD(live.start)} · ${n} entries · ${esc(live.wx)}</p>
       <button class="btn primary block" data-act="resume">Resume counting</button>
-      <button class="btn block" data-act="toEnd">Finish and export</button></section>`+footerLinks()}
+      <button class="btn block" data-act="toEnd">Finish and save data</button></section>`}
   return head+`
   <section class="card"><h2>Who's counting?</h2>
     <div class="grid3">${NAMES.map(n=>`<button class="pick ${draft.obs===n?'on':''}" data-act="obs" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div></section>
@@ -346,9 +354,9 @@ function setupHTML(){
   <section class="card"><h3>How it works</h3><ol class="steps">
     <li>Pick your station on the map and read its short briefing.</li>
     <li>Tap to log each vehicle, person or signal change. Every tap is timestamped and grouped into 15-minute intervals for you.</li>
-    <li>At the end, save your Excel file and send it to Harry. The Combine screen merges everyone's files into one workbook.</li></ol></section>`+footerLinks();
+    <li>At the end, save your Excel file and send it to Harry.</li></ol>
+    <p class="small muted">Your taps are saved on this phone as you go, so a dropped signal, a locked screen or a closed tab won't lose anything.</p></section>`;
 }
-function footerLinks(){return `<button class="btn block" data-act="toCombine">Combine group files</button>`}
 function pickHTML(){
   const cur=S.station;
   return `<header class="brand"><span class="eyebrow">${esc(S.session.obs)} · ${esc(S.session.wx)}</span><h1>Where are you standing?</h1><p class="muted">Tap a station on the map or in the list.</p></header>
@@ -396,13 +404,16 @@ function countHTML(){const st=S.station,s=STN[st];let body='';
    <section class="card"><h3>Bus stopped at a red light</h3><p class="small muted">Tap its approach when it stops. Tap the timer when it crosses the stop line.</p>
     <div class="grid3" style="grid-template-columns:repeat(2,1fr)">${APPS.map(a=>`<button class="pick" data-act="bstart" data-app="${a}">${APP[a].road}</button>`).join('')}</div>
     <div class="timers" id="timers"></div><p class="small muted" id="bdsum"></p></section>`}
-  return barHTML()+body+`
+  return barHTML()+`<p class="last" id="last" aria-live="polite"></p>`+body+`
   <section class="card"><h3>Add a note</h3><textarea id="note" rows="2" placeholder="e.g. bin lorry blocking left lane, 2 min"></textarea><button class="btn" data-act="note">Save note</button></section>
-  <button class="btn warn block" data-act="toEnd">Finish session and save data</button>`;
+  <section class="card"><h3>Weather changed?</h3><div class="row">${WEATHER.map(w=>`<button class="chip ${S.session.wx===w?'on':''}" data-act="wxnow" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div></section>
+  <button class="btn warn block" data-act="toEnd">Finish session and save data</button>
+  <p class="small muted" style="text-align:center">Saved on this phone as you go. Safe to lock the screen or lose signal.</p>`;
 }
 function refresh(){
   if(S.screen!=='count')return;const st=S.station,s=STN[st],ev=sesEv();
   $('#tot').textContent=stationTotal(st);
+  const le=lastEntry();$('#last').innerHTML=le?`Last entry: <b>${esc(describe(le))}</b> at ${fT(le.t,1)}`:'No entries yet at this station';
   const now=Date.now(),q0=qf(now);
   const inIv=ev.filter(e=>e.st===st&&TAPK[s.role].includes(e.k)&&e.t>=q0).length;
   $('#clock').textContent=`${fT(q0)}–${fT(q0+Q)} · ${mmss(q0+Q-now)} left`;
@@ -456,6 +467,7 @@ function endHTML(){
   return `<header class="brand"><span class="eyebrow">Finish session</span><h1>Save your data</h1><p class="muted">${esc(S.session.obs)} · ${fD(S.session.start)} · ${fT(S.session.start)} to ${fT(Date.now())}</p></header>
   <section class="card"><table class="sum"><tbody>${rows.length?rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(''):'<tr><td>Nothing logged yet</td><td>0</td></tr>'}</tbody></table></section>
   <section class="card"><h3>1. Save the Excel file</h3><p class="small muted">It has your raw taps plus 15-minute tables in the same layout as the UK count sheet. Send it to Harry when you're done.</p>
+   <p class="small muted">On iPhone, if the file opens instead of saving, tap the share icon and choose Save to Files or send it straight to the group chat.</p>
    <button class="btn primary block" data-act="export" id="exportBtn">Save Excel file</button>
    <button class="btn block" data-act="copycsv">Copy data as text (backup)</button>
    <textarea id="csvout" rows="4" hidden readonly></textarea></section>
@@ -463,37 +475,21 @@ function endHTML(){
    ${confirmNew?`<p><b>Have you saved your file? This can't be undone.</b></p><div class="row"><button class="btn warn" data-act="clear">Yes, clear it</button><button class="btn" data-act="noclear">Cancel</button></div>`:`<button class="btn warn block" data-act="askclear">Clear and start a new session</button>`}</section>
   <button class="btn block" data-act="resume">Back to counting</button>`;
 }
-function combineHTML(){
-  const obs=[...new Set(combineEvents.map(e=>e.obs))];
-  return `<header class="brand"><span class="eyebrow">Admin</span><h1>Combine group files</h1><p class="muted">Add everyone's saved Excel files (or text backups saved as .csv). Duplicates are removed, so adding the same file twice is safe.</p></header>
-  <section class="card"><label class="btn block" style="display:flex;align-items:center;justify-content:center" for="files">Add files</label>
-   <input id="files" type="file" accept=".xlsx,.csv,.txt" multiple hidden>
-   <div class="filelist">${combineFiles.length?combineFiles.map(f=>`<div><span>${esc(f.name)}</span><span class="muted">${f.n} entries</span></div>`).join(''):'<p class="muted small">No files added yet.</p>'}</div></section>
-  ${combineEvents.length?`<section class="card"><table class="sum"><tbody>
-   <tr><td>Observers</td><td>${obs.length}</td></tr><tr><td>Entries</td><td>${combineEvents.length}</td></tr>
-   <tr><td>Vehicles</td><td>${combineEvents.filter(e=>e.k==='veh').length}</td></tr><tr><td>Pedestrians and crossing cyclists</td><td>${combineEvents.filter(e=>e.k==='ped').length}</td></tr>
-   <tr><td>Days</td><td>${[...new Set(combineEvents.map(e=>fD(e.t)))].join(', ')}</td></tr></tbody></table>
-   <button class="btn primary block" data-act="saveCombined">Save combined workbook</button>
-   <button class="btn block" data-act="resetCombine">Start again</button></section>`:''}
-  <button class="btn block" data-act="home">Back</button>`;
-}
-
 /* ---------- actions ---------- */
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   if(b.dataset.act==='closeBrief'&&e.target!==b&&b.classList.contains('sheet-wrap'))return;
   act(b.dataset.act,b.dataset,b);
 });
-document.addEventListener('change',e=>{if(e.target.id==='files')addFiles(e.target.files)});
 
 function act(a,d,el){
   switch(a){
   case 'obs':draft.obs=d.v;render();break;
   case 'wx':draft.wx=d.v;render();break;
-  case 'start':S.session={id:uid(),obs:draft.obs,wx:draft.wx,start:Date.now()};S.screen='pick';S.station=null;save();render();break;
+  case 'start':try{localStorage.setItem(LAST,JSON.stringify({obs:draft.obs}))}catch(e){}
+    S.session={id:uid(),obs:draft.obs,wx:draft.wx,start:Date.now()};S.screen='pick';S.station=null;save();render();break;
   case 'resume':S.screen=S.station?'count':'pick';save();render();break;
   case 'home':S.screen='setup';save();render();break;
-  case 'toCombine':S.screen='combine';render();break;
   case 'brief':brief=d.st;renderSheet();if(S.screen==='pick')render();break;
   case 'closeBrief':brief=null;renderSheet();if(S.screen==='pick')render();break;
   case 'go':{const st=d.st;brief=null;
@@ -502,13 +498,12 @@ function act(a,d,el){
   case 'switch':S.screen='pick';save();render();window.scrollTo(0,0);break;
   case 'backCount':S.screen='count';render();break;
   case 'sel':S.sel=d.k;save();refresh();break;
-  case 'veh':{const s=STN[S.station];const c=S.sel;log('veh',{app:s.app,m:d.m,cls:c});S.sel='car';save();flash(el);buzz();refresh();
-    toast(`${CLS[c].label} → ${APP[s.app][d.m]}`);break}
+  case 'veh':{const s=STN[S.station];const c=S.sel;log('veh',{app:s.app,m:d.m,cls:c});S.sel='car';save();flash(el);buzz();refresh();break}
   case 'qp':S.queue[STN[S.station].app]++;save();refresh();break;
   case 'qm':{const a2=STN[S.station].app;S.queue[a2]=Math.max(0,S.queue[a2]-1);save();refresh();break}
   case 'qlog':{const a2=STN[S.station].app;log('queue',{app:a2,n:S.queue[a2]});toast(`Queue of ${S.queue[a2]} logged`);S.queue[a2]=0;save();refresh();break}
   case 'who':S.who=d.v;save();refresh();break;
-  case 'ped':{log('ped',{cx:d.cx,who:S.who});const w=S.who;S.who='Pedestrian';save();flash($('#cx-'+d.cx));buzz();refresh();toast(`${w} · ${CROSS[d.cx]}`);break}
+  case 'ped':{log('ped',{cx:d.cx,who:S.who});S.who='Pedestrian';save();flash($('#cx-'+d.cx));buzz();refresh();break}
   case 'pstart':S.timers.push({id:uid(),k:'pdelay',cx:d.cx,t0:Date.now(),ses:S.session.id,st:S.station});save();refresh();break;
   case 'bstart':S.timers.push({id:uid(),k:'bus',app:d.app,t0:Date.now(),ses:S.session.id,st:S.station});save();refresh();break;
   case 'tstop':{const t=S.timers.find(x=>x.id===d.id);if(!t)break;S.timers=S.timers.filter(x=>x.id!==d.id);
@@ -516,18 +511,17 @@ function act(a,d,el){
   case 'tcancel':S.timers=S.timers.filter(x=>x.id!==d.id);save();refresh();break;
   case 'sig':{const last=sigState(d.h);const ch=last?.ch==='G'?'A':'G';log('sig',{h:d.h,ch});flash(el);buzz();refresh();break}
   case 'undo':{const ev=S.events;let i=ev.length-1;
-    while(i>=0&&!(ev[i].ses===S.session.id&&!['on','off'].includes(ev[i].k)))i--;
-    if(i<0){toast('Nothing to undo')}else{const e=ev.splice(i,1)[0];save();toast('Undid: '+describe(e))}
+    while(i>=0&&!(ev[i].ses===S.session.id&&ev[i].st===S.station&&!['on','off','note'].includes(ev[i].k)))i--;
+    if(i<0){toast('Nothing to undo at this station')}else{const e=ev.splice(i,1)[0];save();toast('Undid: '+describe(e))}
     refresh();break}
+  case 'wxnow':if(S.session.wx!==d.v){S.session.wx=d.v;log('note',{note:'Weather now: '+d.v});save();render();toast('Weather updated')}break;
   case 'note':{const v=$('#note').value.trim();if(!v){toast('Type a note first');break}log('note',{note:v});$('#note').value='';toast('Note saved');break}
   case 'toEnd':brief=null;confirmNew=false;S.screen='end';save();render();window.scrollTo(0,0);break;
   case 'export':doExport();break;
   case 'copycsv':copyCSV();break;
   case 'askclear':confirmNew=true;render();break;
   case 'noclear':confirmNew=false;render();break;
-  case 'clear':S=fresh();save();draft={obs:null,wx:null};confirmNew=false;render();toast('Cleared. Ready for a new session.');break;
-  case 'saveCombined':saveCombined();break;
-  case 'resetCombine':combineFiles=[];combineEvents=[];render();break;
+  case 'clear':S=fresh();save();draft={obs:lastPick().obs||null,wx:null};confirmNew=false;render();toast('Cleared. Ready for a new session.');break;
   }
 }
 function describe(e){
@@ -551,9 +545,6 @@ const RAW=[['ID','id'],['Epoch ms','t'],['Date',null],['Time',null],['Observer',
 function rawRows(ev){return [RAW.map(r=>r[0]),...ev.map(e=>RAW.map(([h,f])=>{
   if(h==='Date')return fD(e.t);if(h==='Time')return fT(e.t,1);if(h==='Duration (s)')return e.t0?r1((e.t-e.t0)/1000):'';
   const v=e[f];return v===undefined||v===null?'':v}))]}
-function parseRaw(rows){const out=[];for(const r of rows){if(!r.ID||!r.Kind)continue;const e={};
-  for(const [h,f] of RAW){if(!f)continue;let v=r[h];if(v===undefined||v==='')continue;if(['t','t0','n'].includes(f))v=Number(v);e[f]=typeof v==='number'||['t','t0','n'].includes(f)?v:String(v);}
-  if(e.id&&e.t&&e.k)out.push(e)}return out}
 
 function spans(ev){const by={};for(const e of ev)(by[e.ses]=by[e.ses]||[]).push(e);const out=[];
   for(const k in by){const l=by[k].sort((a,b)=>a.t-b.t);let o=null;
@@ -665,20 +656,12 @@ function copyCSV(){const ev=sesEv();const ws=XLSX.utils.aoa_to_sheet(rawRows(ev)
   const ta=$('#csvout');ta.hidden=false;ta.value=csv;
   const fallback=()=>{ta.focus();ta.select();toast('Text selected. Copy it and send it to Harry.')};
   try{navigator.clipboard.writeText(csv).then(()=>toast('Copied. Paste it into a message to Harry.'),fallback)}catch(e){fallback()}}
-async function addFiles(list){
-  for(const f of list){try{let rows;
-    if(/\.xlsx$/i.test(f.name)){const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});const ws=wb.Sheets['Raw_Log'];if(!ws){toast(f.name+' has no Raw_Log sheet');continue}rows=XLSX.utils.sheet_to_json(ws,{defval:''})}
-    else{const wb=XLSX.read(await f.text(),{type:'string'});rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''})}
-    const ev=parseRaw(rows);const have=new Set(combineEvents.map(e=>e.id));const add=ev.filter(e=>!have.has(e.id));
-    combineEvents.push(...add);combineFiles.push({name:f.name,n:ev.length})}
-  catch(e){toast('Could not read '+f.name)}}
-  render()}
-function saveCombined(){if(!combineEvents.length)return;const d=[...new Set(combineEvents.map(e=>fISO(e.t)))].sort();
-  saveFile(`KB_Combined_${d[0]}${d.length>1?'_to_'+d[d.length-1]:''}.xlsx`,buildWB(combineEvents))}
-
-window.__kb={buildWB,parseRaw,rawRows,get S(){return S}};
+window.__kb={buildWB,rawRows,get S(){return S}};
 if(S.screen==='count'&&!STN[S.station])S.screen='pick';
+if(S.screen==='combine')S.screen='setup';
 render();
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.claude){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+addEventListener('beforeunload',e=>{if(!storageOK&&S.session){e.preventDefault();e.returnValue=''}});
 </script>
 
 </body>
