@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#15181B">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>KB Junction Counter</title>
+</head>
+<body>
+<style>
+/* Layout: one-column field tool, road-sign type, big tap targets, hi-vis yellow for "selected" */
+:root{
+  --bg:#EEF0EC; --surface:#FFFFFF; --ink:#15181B; --muted:#596169; --line:#D3D8D1;
+  --tarmac:#3B4046; --verge:#DCE3D6; --lane:#F4F4F0; --marking:#F2C200; --on-marking:#1B1700;
+  --go:#1C8A4A; --stop:#C7362C; --amber:#E0950A; --toucan:#2FA35B; --voi:#E2546A;
+  --display:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; --body:var(--display); --mono:var(--display);
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111417; --surface:#1B1F23; --ink:#ECEFEA; --muted:#9BA4AC; --line:#2F353B;
+  --tarmac:#454B52; --verge:#1F2A22; --lane:#C9CCC6; --marking:#F5C518; --on-marking:#1B1700;
+  --go:#38B26A; --stop:#E5574C; --amber:#F0A92A; --toucan:#3FBF6E; --voi:#F06C80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111417; --surface:#1B1F23; --ink:#ECEFEA; --muted:#9BA4AC; --line:#2F353B;
+  --tarmac:#454B52; --verge:#1F2A22; --lane:#C9CCC6; --marking:#F5C518; --on-marking:#1B1700;
+  --go:#38B26A; --stop:#E5574C; --amber:#F0A92A; --toucan:#3FBF6E; --voi:#F06C80; color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);font-variant-numeric:tabular-nums;font-size:16px;line-height:1.45;padding-inline:16px;padding-block:0 40px}
+#app{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+button{font:inherit;color:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--marking);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:28px;font-weight:800;letter-spacing:-.01em}
+h2{font-size:21px;font-weight:800}
+h3{font-size:16px;font-weight:800}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.eyebrow{font-family:var(--display);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
+.stack{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{min-height:52px;padding:10px 16px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-weight:700}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.warn{border-color:var(--stop);color:var(--stop)}
+.btn.block{width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.chip{min-height:44px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-weight:600;font-size:15px}
+.chip.on,.pick.on{background:var(--marking);color:var(--on-marking);border-color:var(--marking)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pick{min-height:52px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-weight:700}
+.top-band{height:8px;margin-inline:-16px;background:repeating-linear-gradient(-45deg,var(--marking) 0 14px,var(--ink) 14px 28px)}
+.brand{display:flex;flex-direction:column;gap:4px;padding-top:16px}
+.brand .sub{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.02em}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.warnbar{background:var(--stop);color:#fff;border-radius:var(--r);padding:10px 14px;font-weight:600;font-size:14px}
+
+/* map */
+.map{width:100%;max-width:420px;height:auto;display:block;margin:0 auto;border-radius:var(--r)}
+.map text{font-family:var(--display);font-weight:800}
+.pin{cursor:pointer}
+.pin circle{fill:var(--surface);stroke:var(--ink);stroke-width:2.5}
+.pin text{fill:var(--ink);font-size:17px}
+.pin.on circle{fill:var(--marking);stroke:var(--on-marking)}
+.pin.on text{fill:var(--on-marking)}
+.cx-hit{cursor:pointer}
+.cx-hit:active .cx-band{opacity:.6}
+
+.stn-list{display:flex;flex-direction:column;gap:8px}
+.stn{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;text-align:left;padding:12px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface)}
+.stn .lt{width:44px;height:44px;border-radius:50%;border:2.5px solid var(--ink);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:20px}
+.stn.on .lt{background:var(--marking);border-color:var(--on-marking);color:var(--on-marking)}
+.stn .t{font-weight:800;font-family:var(--display)}
+.stn .d{font-size:13px;color:var(--muted)}
+
+/* briefing sheet */
+.sheet-wrap{position:fixed;inset:0;background:rgb(0 0 0 / .45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);width:100%;max-width:560px;max-height:88%;overflow:auto;border-radius:16px 16px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.brief dt{font-family:var(--display);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.brief dd{margin:2px 0 0}
+.brief{margin:0;display:flex;flex-direction:column;gap:6px}
+.brief ul{margin:4px 0 0;padding-left:18px}
+
+/* counting bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);margin-inline:-16px;padding:10px 16px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center}
+.bar .tools{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bar .tools button{min-height:40px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:14px}
+.bar .tools .help{border-color:var(--ink)}
+.bar .stl{width:42px;height:42px;border-radius:50%;background:var(--marking);color:var(--on-marking);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:20px;border:0}
+.bar .ttl{min-width:0}
+.bar .ttl b{display:block;font-family:var(--display);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .ttl span{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.total{display:flex;align-items:center;gap:10px}
+.total .n{font-family:var(--mono);font-weight:700;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+.total .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;text-align:right}
+.undo{min-height:44px;padding:6px 12px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:14px}
+
+.classes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.cls{min-height:66px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;text-align:center}
+.cls .cl{font-weight:800;font-size:14px;line-height:1.1}
+.cls .ch{font-size:11px;color:var(--muted);line-height:1.15}
+.cls.on{background:var(--marking);border-color:var(--marking);color:var(--on-marking)}
+.cls.on .ch{color:var(--on-marking)}
+.cls.voi .cl{color:var(--voi)}
+.cls.voi.on .cl{color:var(--on-marking)}
+.next{font-size:14px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.next b{font-family:var(--display)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px;border-radius:14px;background:var(--tarmac);transition:box-shadow .15s}
+.pad.armed{box-shadow:0 0 0 4px var(--marking)}
+.mv{min-height:168px;border-radius:var(--r);border:0;background:color-mix(in srgb,var(--tarmac) 70%,#000);color:var(--lane);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;text-align:center}
+.mv svg{width:52px;height:64px}
+.mv .mvl{font-family:var(--display);font-weight:800;font-size:16px}
+.mv .mvd{font-size:12px;opacity:.85;line-height:1.2}
+.mv .mvn{font-family:var(--mono);font-weight:700;font-size:20px;color:var(--marking)}
+.hit{animation:hit .22s ease-out}
+@keyframes hit{0%{transform:scale(.94);filter:brightness(1.5)}100%{transform:scale(1);filter:none}}
+@media (prefers-reduced-motion:reduce){.hit{animation:none}}
+
+.qrow{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:center}
+.qrow output{font-family:var(--mono);font-size:30px;font-weight:700;text-align:center}
+.qbtn{min-height:52px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-size:26px;font-weight:700}
+
+.heads{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.head{min-height:120px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px;text-align:left}
+.head .hn{font-family:var(--display);font-weight:800;font-size:15px}
+.head .lamp{width:26px;height:26px;border-radius:50%;background:var(--stop);box-shadow:inset 0 0 0 3px rgb(0 0 0 / .15)}
+.head.g{border-color:var(--go)}
+.head.g .lamp{background:var(--go)}
+.head.u .lamp{background:var(--line)}
+.head .hs{font-size:13px;font-weight:700}
+.head .hx{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.head.full{grid-column:1/-1;min-height:84px}
+
+.timers{display:flex;flex-direction:column;gap:8px}
+.timer{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:stretch}
+.timer .go{min-height:56px;border-radius:var(--r);border:2px solid var(--amber);background:color-mix(in srgb,var(--amber) 14%,var(--surface));text-align:left;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.timer .go b{font-family:var(--mono);font-size:22px}
+.timer .x{min-width:52px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-size:13px;font-weight:700}
+
+.cxbtns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.cxb{min-height:72px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;text-align:left}
+.cxb .n{font-family:var(--mono);font-size:24px;font-weight:700}
+.cxb.full{grid-column:1/-1}
+.cxb.toucan{border-color:var(--toucan)}
+
+.foot{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.foot .btn{min-height:48px;font-size:14px;padding:8px}
+textarea,input[type=text]{width:100%;box-sizing:border-box;font:inherit;border:1.5px solid var(--line);border-radius:var(--r);padding:10px;background:var(--surface);color:var(--ink)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:30;max-width:calc(100% - 32px);text-align:center}
+table.sum{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+table.sum td,table.sum th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+table.sum td:last-child,table.sum th:last-child{text-align:right;font-family:var(--mono)}
+.filelist{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.filelist div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding-bottom:6px;min-width:0}
+.filelist span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+</style>
+
+<div class="top-band" aria-hidden="true"></div>
+<main id="app"></main>
+<div id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ---------- junction model ---------- */
+const NAMES=['Harry O','Murray','Harry J','Ciaran','Joseph','Ollie'];
+const WEATHER=['Dry, bright','Dry, overcast','Light rain','Heavy rain','Windy','Low light'];
+const APP={
+  N:{road:'Mayfield Rd (north)',compass:'North',L:'Esslemont Rd',A:'Mayfield Rd (south)',R:'West Mains Rd'},
+  E:{road:'Esslemont Rd',compass:'East',L:'Mayfield Rd (south)',A:'West Mains Rd',R:'Mayfield Rd (north)'},
+  S:{road:'Mayfield Rd (south)',compass:'South',L:'West Mains Rd',A:'Mayfield Rd (north)',R:'Esslemont Rd'},
+  W:{road:'West Mains Rd',compass:'West',L:'Mayfield Rd (north)',A:'Esslemont Rd',R:'Mayfield Rd (south)'}
+};
+const APPS=['N','E','S','W'];
+const MV={L:'Left',A:'Straight on',R:'Right'};
+const MVX={L:'Left',A:'Through',R:'Right'};
+const CLASSES=[
+  {k:'car',label:'Car / Taxi',hint:'incl. private hire',pcu:1,x:'Car/Taxi'},
+  {k:'lgv',label:'Van / LGV',hint:'vans, pick-ups',pcu:1,x:'LGV/Van'},
+  {k:'hgvr',label:'HGV rigid',hint:'one-piece lorry',pcu:2.3,x:'HGV Rigid'},
+  {k:'hgva',label:'HGV artic',hint:'cab + trailer',pcu:2.8,x:'HGV Artic'},
+  {k:'bus',label:'Bus / Coach',hint:'service or coach',pcu:2,x:'Bus/Coach'},
+  {k:'mc',label:'Motorbike',hint:'incl. mopeds',pcu:0.5,x:'Motorcycle'},
+  {k:'cyc',label:'Cycle',hint:'own bike',pcu:0.2,x:'Pedal Cycle'},
+  {k:'voi',label:'Voi e-bike',hint:'shared, Voi',pcu:0.2,x:'Voi e-bike'}
+];
+const CLS=Object.fromEntries(CLASSES.map(c=>[c.k,c]));
+const CROSS={N:'Mayfield Rd (north)',E:'Esslemont Rd',S:'Mayfield Rd (south)',W:'West Mains Rd (toucan)',D:'Diagonal toucan'};
+const CXS=['N','E','S','W','D'];
+const HEADS={N:'Mayfield Rd (north)',E:'Esslemont Rd',S:'Mayfield Rd (south)',W:'West Mains Rd',P:'Green man (pedestrian stage)'};
+const CORNER={
+  NE:'North-east corner, between Mayfield Rd (north) and Esslemont Rd',
+  SE:'South-east corner, between Esslemont Rd and Mayfield Rd (south)',
+  SW:"South-west corner, King's Buildings side (University grounds)",
+  NW:'North-west corner, between West Mains Rd and Mayfield Rd (north)'
+};
+const STN={
+  A:{role:'veh',app:'N',corner:'NE',title:'Mayfield Rd (north) traffic',short:'Southbound traffic from Mayfield Rd (north)'},
+  B:{role:'veh',app:'E',corner:'SE',title:'Esslemont Rd traffic',short:'Westbound traffic from Esslemont Rd'},
+  C:{role:'veh',app:'S',corner:'SW',title:'Mayfield Rd (south) traffic',short:'Northbound traffic from Mayfield Rd (south)'},
+  D:{role:'veh',app:'W',corner:'NW',title:'West Mains Rd traffic',short:'Eastbound traffic from West Mains Rd'},
+  E:{role:'ped',corner:'SW',title:'Pedestrians and crossings',short:'People using all five crossings, plus wait times'},
+  F:{role:'sig',corner:'NW',title:'Signals and buses',short:'Green and amber times, cycle length, bus delay'}
+};
+const VEHST={N:'A',E:'B',S:'C',W:'D'};
+const PIN={A:[244,116],B:[244,244],C:[116,244],D:[116,116],E:[74,280],F:[74,80]};
+
+const BRIEF={
+ veh:(st)=>{const a=APP[STN[st].app];return `
+  <dl class="brief">
+   <dt>Where to stand</dt><dd>${CORNER[STN[st].corner]}. Stay at least 1 m back from the kerb, where you can see the ${a.road} stop line.</dd>
+   <dt>What you count</dt><dd>Every vehicle and bike coming from <b>${a.road}</b>, at the moment it crosses the stop line, and where it goes:
+    <ul><li>Left to ${a.L}</li><li>Straight on to ${a.A}</li><li>Right to ${a.R}</li></ul></dd>
+   <dt>How to tap</dt><dd><b>Car is pre-selected</b>, so for a car just tap the arrow. For anything else, tap the vehicle type first, then the arrow. It goes back to Car after each entry. Bikes in the cycle box count too. Voi bikes get their own button.</dd>
+   <dt>Queue at end of red</dt><dd>When your light turns green, count how many vehicles were waiting and log it. Do it every cycle you can. Missing some cycles is fine.</dd>
+   <dt>Why it matters</dt><dd>Turning counts by vehicle type give the flow for each movement in PCU/h. That feeds capacity, degree of saturation and delay. Queues are direct evidence of congestion.</dd>
+   <dt>Tips</dt><dd><ul><li>Count at the stop line, not when they join the queue.</li><li>Unsure about a vehicle type? Go with your best guess and keep going.</li><li>Wrong tap? Use Undo straight away.</li></ul></dd>
+  </dl>`},
+ ped:()=>`
+  <dl class="brief">
+   <dt>Where to stand</dt><dd>${CORNER.SW}. You can see all five crossings from here, including the diagonal toucan.</dd>
+   <dt>What you count</dt><dd>Every person who uses each crossing, when they step onto it. Count groups one person at a time. Cyclists riding over a toucan crossing: tap <b>Cyclist</b> or <b>Voi</b> first, then the crossing.</dd>
+   <dt>Wait times</dt><dd>When you have a spare moment, pick one person who reaches the kerb while the green man is off. Tap <b>Start</b> for their crossing, then tap their timer when they step off. Only time people who actually wait. Aim for about 10 per crossing per session.</dd>
+   <dt>Why it matters</dt><dd>Demand by crossing shows whether the crossings match where people want to walk. Wait time is the pedestrian delay KPI. The 2025 data showed about 818 pedestrians an hour, so this matters to the Council.</dd>
+   <dt>Tips</dt><dd><ul><li>People crossing away from a crossing: add a note with the location. It is evidence of desire lines.</li><li>Undo removes your last tap.</li></ul></dd>
+  </dl>`,
+ sig:()=>`
+  <dl class="brief">
+   <dt>Where to stand</dt><dd>${CORNER.NW}. Pick a spot where you can see the signals for all four approaches.</dd>
+   <dt>Signals</dt><dd>Each box is one approach's main signal. Tap it the moment that signal turns <b>green</b>, and again the moment it turns <b>amber</b>. For the green man, tap when it comes on and when it goes off. The app works out green times and cycle length for you.</dd>
+   <dt>Buses</dt><dd>When a bus stops at a red light, tap its approach. A timer starts. Tap the timer when the bus crosses the stop line. Buses that don't stop are counted by stations A to D, so ignore them here.</dd>
+   <dt>Why it matters</dt><dd>Capacity is c = s × lanes × g/C, so you need the green time g and cycle length C. Bus delay shows how the signals affect buses.</dd>
+   <dt>Tips</dt><dd><ul><li>If a right-turn filter arrow appears or a stage gets skipped, add a note.</li><li>Get 10 to 15 full cycles if you can. It is better to catch every change for a few cycles than to half-catch many.</li></ul></dd>
+  </dl>`
+};
+
+/* ---------- state ---------- */
+const KEY='kbjc.v1';
+let storageOK=true;
+function load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch(e){storageOK=false;return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){storageOK=false}}
+function fresh(){return {session:null,events:[],station:null,sel:'car',who:'Pedestrian',queue:{N:0,E:0,S:0,W:0},timers:[],screen:'setup'}}
+let S=load()||fresh();
+try{localStorage.setItem(KEY+'.t','1');localStorage.removeItem(KEY+'.t')}catch(e){storageOK=false}
+let draft={obs:S.session?.obs||null,wx:null};
+let brief=null; let confirmNew=false; let combineFiles=[]; let combineEvents=[];
+
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fD=t=>{const d=new Date(t);return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()};
+const fT=(t,sec)=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())+(sec?':'+pad(d.getSeconds()):'')};
+const fISO=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const Q=900000;
+const qf=t=>{const d=new Date(t);d.setSeconds(0,0);d.setMinutes(Math.floor(d.getMinutes()/15)*15);return d.getTime()};
+const mmss=ms=>{const s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+':'+pad(s%60)};
+const r1=x=>Math.round(x*10)/10;
+
+function log(k,f){const e=Object.assign({id:uid(),t:Date.now(),k,st:S.station,obs:S.session.obs,wx:S.session.wx,ses:S.session.id},f||{});S.events.push(e);save();return e}
+function sesEv(){return S.events.filter(e=>e.ses===S.session?.id)}
+const TAPK={veh:['veh'],ped:['ped'],sig:['sig']};
+function stationTotal(st){const ks=TAPK[STN[st].role];return sesEv().filter(e=>e.st===st&&ks.includes(e.k)).length}
+function sigState(h){const ev=sesEv().filter(e=>e.k==='sig'&&e.h===h);return ev.length?ev[ev.length-1]:null}
+
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,1600)}
+function buzz(){try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}}
+function flash(el){if(!el)return;el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit')}
+
+let wake=null;
+async function keepAwake(){try{if('wakeLock' in navigator&&!wake){wake=await navigator.wakeLock.request('screen');wake.addEventListener('release',()=>wake=null)}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.screen==='count')keepAwake()});
+
+/* ---------- map ---------- */
+function mapSVG(mode,sel){
+  let s=`<svg viewBox="0 0 360 360" class="map" role="img" aria-label="Schematic of the King's Buildings junction, north at the top">
+  <rect width="360" height="360" fill="var(--verge)"/>
+  <rect x="145" y="0" width="70" height="360" fill="var(--tarmac)"/><rect x="0" y="145" width="360" height="70" fill="var(--tarmac)"/>
+  <path d="M180 0V112M180 248V360M0 180H112M248 180H360" stroke="var(--lane)" stroke-width="2" stroke-dasharray="9 9" fill="none"/>
+  <path d="M180 118H215M145 242H180M118 145V180M242 180V215" stroke="var(--lane)" stroke-width="4"/>`;
+  if(sel&&STN[sel].role==='veh'){const r={N:[180,0,35,116],E:[244,180,116,35],S:[145,244,35,116],W:[0,145,116,35]}[STN[sel].app];
+    s+=`<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" fill="var(--marking)" opacity=".55"/>`}
+  const cx={N:[145,122,70,14],S:[145,224,70,14],W:[122,145,14,70],E:[224,145,14,70]};
+  const pedOn=mode==='ped'||(sel==='E');
+  const counts=mode==='ped'?pedCounts():{};
+  for(const k of ['N','E','S','W']){const [x,y,w,h]=cx[k];
+    const col=k==='W'?'var(--toucan)':'var(--lane)';
+    s+=`<g class="${mode==='ped'?'cx-hit':''}" ${mode==='ped'?`data-act="ped" data-cx="${k}"`:''}>
+      <rect x="${x-(w<20?14:0)}" y="${y-(h<20?14:0)}" width="${w+(w<20?28:0)}" height="${h+(h<20?28:0)}" fill="transparent"/>
+      <rect class="cx-band" x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${col}" stroke-width="2.5" stroke-dasharray="4 4" opacity="${pedOn?1:.7}"/>
+      ${pedOn?`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${col}" opacity=".35"/>`:''}
+      ${mode==='ped'?`<text x="${x+w/2}" y="${y+h/2+5}" text-anchor="middle" font-size="14" fill="var(--marking)" font-family="var(--mono)">${counts[k]||0}</text>`:''}
+    </g>`}
+  s+=`<g class="${mode==='ped'?'cx-hit':''}" ${mode==='ped'?'data-act="ped" data-cx="D"':''}>
+    <line x1="214" y1="146" x2="146" y2="214" stroke="transparent" stroke-width="34"/>
+    <line x1="214" y1="146" x2="146" y2="214" stroke="var(--toucan)" stroke-width="${pedOn?10:6}" stroke-dasharray="5 5" opacity="${pedOn?1:.7}"/>
+    ${mode==='ped'?`<circle cx="180" cy="180" r="15" fill="var(--tarmac)" stroke="var(--toucan)" stroke-width="2"/><text x="180" y="185" text-anchor="middle" font-size="14" fill="var(--marking)" font-family="var(--mono)">${counts.D||0}</text>`:''}
+  </g>`;
+  s+=`<g font-size="10.5" fill="var(--lane)" opacity=".9">
+    <text x="196" y="60" transform="rotate(-90 196 60)" text-anchor="middle">MAYFIELD RD (N)</text>
+    <text x="164" y="300" transform="rotate(-90 164 300)" text-anchor="middle">MAYFIELD RD (S)</text>
+    <text x="58" y="167" text-anchor="middle">WEST MAINS RD</text>
+    <text x="302" y="201" text-anchor="middle">ESSLEMONT RD</text></g>
+  <g font-size="10" fill="var(--muted)">
+    <text x="12" y="22">No. 184</text><text x="348" y="22" text-anchor="end">No. 167</text>
+    <text x="348" y="350" text-anchor="end">No. 169</text><text x="12" y="350">KING'S BUILDINGS</text></g>
+  <g transform="translate(318 60)"><path d="M0 -16L7 4H-7Z" fill="var(--ink)"/><text y="18" text-anchor="middle" font-size="11" fill="var(--ink)">N</text></g>`;
+  if(mode==='pick'){for(const k in PIN){const [x,y]=PIN[k];
+    s+=`<g class="pin ${sel===k?'on':''}" data-act="brief" data-st="${k}" role="button" aria-label="Station ${k}"><circle cx="${x}" cy="${y}" r="21" fill="transparent" stroke="none"/><circle cx="${x}" cy="${y}" r="17"/><text x="${x}" y="${y+6}" text-anchor="middle">${k}</text></g>`}}
+  return s+'</svg>';
+}
+function pedCounts(){const c={};for(const e of sesEv())if(e.k==='ped')c[e.cx]=(c[e.cx]||0)+1;return c}
+
+const ARROW={
+ L:'<svg viewBox="0 0 48 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M34 60V32a12 12 0 0 0-12-12H8"/><path d="M17 10L7 20l10 10"/></svg>',
+ A:'<svg viewBox="0 0 48 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 60V8"/><path d="M13 19L24 8l11 11"/></svg>',
+ R:'<svg viewBox="0 0 48 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 60V32a12 12 0 0 1 12-12h14"/><path d="M31 10l10 10-10 10"/></svg>'
+};
+
+/* ---------- screens ---------- */
+function render(){
+  const app=$('#app');
+  const warn=storageOK?'':`<div class="warnbar">This browser is not saving progress. Keep this tab open and export before closing it.</div>`;
+  if(S.screen==='setup')app.innerHTML=warn+setupHTML();
+  else if(S.screen==='pick')app.innerHTML=warn+pickHTML();
+  else if(S.screen==='count'){app.innerHTML=warn+countHTML();refresh();keepAwake()}
+  else if(S.screen==='end')app.innerHTML=warn+endHTML();
+  else if(S.screen==='combine')app.innerHTML=combineHTML();
+  renderSheet();
+}
+function setupHTML(){
+  const live=S.session;
+  const head=`<header class="brand"><span class="eyebrow">CIVE10033 · Traffic Think Tank</span><h1>KB Junction Counter</h1><span class="sub">Mayfield Rd × West Mains Rd × Esslemont Rd</span></header>`;
+  if(live){const n=sesEv().filter(e=>!['on','off'].includes(e.k)).length;
+    return head+`<section class="card"><span class="eyebrow">Session in progress</span>
+      <h2>${esc(live.obs)}</h2><p class="muted">Started ${fT(live.start)} on ${fD(live.start)} · ${n} entries · ${esc(live.wx)}</p>
+      <button class="btn primary block" data-act="resume">Resume counting</button>
+      <button class="btn block" data-act="toEnd">Finish and export</button></section>`+footerLinks()}
+  return head+`
+  <section class="card"><h2>Who's counting?</h2>
+    <div class="grid3">${NAMES.map(n=>`<button class="pick ${draft.obs===n?'on':''}" data-act="obs" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div></section>
+  <section class="card"><h2>Weather right now</h2>
+    <div class="row">${WEATHER.map(w=>`<button class="chip ${draft.wx===w?'on':''}" data-act="wx" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div>
+    <p class="small muted">It goes in the export, so unusual conditions can be reported as a limitation.</p></section>
+  <button class="btn primary block" data-act="start" ${draft.obs&&draft.wx?'':'disabled'}>${draft.obs&&draft.wx?'Start session':'Pick your name and the weather'}</button>
+  <section class="card"><h3>How it works</h3><ol class="steps">
+    <li>Pick your station on the map and read its short briefing.</li>
+    <li>Tap to log each vehicle, person or signal change. Every tap is timestamped and grouped into 15-minute intervals for you.</li>
+    <li>At the end, save your Excel file and send it to Harry. The Combine screen merges everyone's files into one workbook.</li></ol></section>`+footerLinks();
+}
+function footerLinks(){return `<button class="btn block" data-act="toCombine">Combine group files</button>`}
+function pickHTML(){
+  const cur=S.station;
+  return `<header class="brand"><span class="eyebrow">${esc(S.session.obs)} · ${esc(S.session.wx)}</span><h1>Where are you standing?</h1><p class="muted">Tap a station on the map or in the list.</p></header>
+  ${mapSVG('pick',brief||cur)}
+  <div class="stn-list">${Object.keys(STN).map(k=>`<button class="stn ${cur===k?'on':''}" data-act="brief" data-st="${k}"><span class="lt">${k}</span><span><span class="t">${STN[k].title}</span><br><span class="d">${STN[k].short} · ${STN[k].corner} corner</span></span></button>`).join('')}</div>
+  <section class="card"><h3>Before you start</h3><ul style="margin:0;padding-left:18px">
+    <li>Hi-vis on. No headphones or earpieces.</li><li>Stand at least 1 m back from the kerb, on the footway.</li>
+    <li>Stay within sight of your buddy.</li><li>Never walk while looking at your phone.</li></ul></section>
+  ${cur?`<button class="btn block" data-act="backCount">Back to station ${cur}</button>`:`<button class="btn block" data-act="home">Back</button>`}`;
+}
+function renderSheet(){
+  let w=document.querySelector('.sheet-wrap');if(w)w.remove();
+  if(!brief)return;
+  const st=STN[brief];
+  const html=`<div class="sheet-wrap" data-act="closeBrief"><div class="sheet" role="dialog" aria-modal="true" aria-label="Station ${brief} instructions">
+    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="eyebrow">Station ${brief} · ${st.corner} corner</span><button class="chip" data-act="closeBrief">Close</button></div>
+    <h2>${st.title}</h2>${BRIEF[st.role](brief)}
+    ${S.screen==='pick'?`<button class="btn primary block" data-act="go" data-st="${brief}">${S.station===brief?'Continue at':'Start counting at'} station ${brief}</button>`:''}
+  </div></div>`;
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+function barHTML(){const st=S.station,s=STN[st];
+  const lbl={veh:'vehicles',ped:'people',sig:'changes'}[s.role];
+  return `<div class="bar"><button class="stl" data-act="brief" data-st="${st}" aria-label="Station ${st} briefing">${st}</button>
+   <div class="ttl"><b>${s.title}</b><span id="clock">--</span></div>
+   <div class="total"><div><span class="n" id="tot">0</span><span class="lbl">${lbl}</span></div><button class="undo" data-act="undo">Undo</button></div>
+   <div class="tools"><button class="help" data-act="brief" data-st="${st}">ⓘ Instructions</button><button data-act="switch">Switch station</button></div></div>`}
+function countHTML(){const st=S.station,s=STN[st];let body='';
+  if(s.role==='veh'){const a=APP[s.app];
+   body=`<section class="classes" role="group" aria-label="Vehicle type">${CLASSES.map(c=>`<button class="cls ${c.k==='voi'?'voi':''}" id="cls-${c.k}" data-act="sel" data-k="${c.k}"><span class="cl">${c.label}</span><span class="ch">${c.hint}</span></button>`).join('')}</section>
+   <div class="next"><span>Next tap logs: <b id="selname">Car / Taxi</b></span><span class="muted">from ${a.road}</span></div>
+   <section class="pad" id="pad">${['L','A','R'].map(m=>`<button class="mv" id="mv-${m}" data-act="veh" data-m="${m}">${ARROW[m]}<span class="mvl">${MV[m]}</span><span class="mvd">to ${a[m]}</span><span class="mvn" id="mvn-${m}">0</span></button>`).join('')}</section>
+   <section class="card"><div class="row" style="justify-content:space-between"><h3>Queue at end of red</h3><span class="small muted" id="qlast">None logged yet</span></div>
+    <div class="qrow"><button class="qbtn" data-act="qm" aria-label="One fewer">−</button><output id="qn">0</output><button class="qbtn" data-act="qp" aria-label="One more">+</button></div>
+    <button class="btn primary block" data-act="qlog">Log queue</button></section>`}
+  else if(s.role==='ped'){
+   body=`<div class="row" role="group" aria-label="Who is crossing">${['Pedestrian','Cyclist','Voi'].map(w=>`<button class="chip" id="who-${w}" data-act="who" data-v="${w}">${w==='Voi'?'Voi e-bike':w}</button>`).join('')}</div>
+   <div id="pedmap">${mapSVG('ped')}</div>
+   <div class="cxbtns">${CXS.map(k=>`<button class="cxb ${k==='D'?'full':''} ${k==='W'||k==='D'?'toucan':''}" id="cx-${k}" data-act="ped" data-cx="${k}"><span>${CROSS[k]}</span><span class="n" id="cxn-${k}">0</span></button>`).join('')}</div>
+   <section class="card"><h3>Pedestrian wait timer</h3><p class="small muted">Start when someone reaches the kerb with the green man off. Tap their timer when they step off.</p>
+    <div class="row">${CXS.map(k=>`<button class="chip" data-act="pstart" data-cx="${k}">Start: ${k==='D'?'Diagonal':CROSS[k].replace(' (toucan)','')}</button>`).join('')}</div>
+    <div class="timers" id="timers"></div><p class="small muted" id="pdsum"></p></section>`}
+  else{
+   body=`<section class="heads">${Object.keys(HEADS).map(h=>`<button class="head ${h==='P'?'full':''}" id="hd-${h}" data-act="sig" data-h="${h}"><span class="hn">${HEADS[h]}</span><span class="lamp"></span><span class="hs" id="hs-${h}"></span><span class="hx" id="hx-${h}"></span></button>`).join('')}</section>
+   <section class="card"><h3>Bus stopped at a red light</h3><p class="small muted">Tap its approach when it stops. Tap the timer when it crosses the stop line.</p>
+    <div class="grid3" style="grid-template-columns:repeat(2,1fr)">${APPS.map(a=>`<button class="pick" data-act="bstart" data-app="${a}">${APP[a].road}</button>`).join('')}</div>
+    <div class="timers" id="timers"></div><p class="small muted" id="bdsum"></p></section>`}
+  return barHTML()+body+`
+  <section class="card"><h3>Add a note</h3><textarea id="note" rows="2" placeholder="e.g. bin lorry blocking left lane, 2 min"></textarea><button class="btn" data-act="note">Save note</button></section>
+  <button class="btn warn block" data-act="toEnd">Finish session and save data</button>`;
+}
+function refresh(){
+  if(S.screen!=='count')return;const st=S.station,s=STN[st],ev=sesEv();
+  $('#tot').textContent=stationTotal(st);
+  const now=Date.now(),q0=qf(now);
+  const inIv=ev.filter(e=>e.st===st&&TAPK[s.role].includes(e.k)&&e.t>=q0).length;
+  $('#clock').textContent=`${fT(q0)}–${fT(q0+Q)} · ${mmss(q0+Q-now)} left`;
+  if(s.role==='veh'){
+    CLASSES.forEach(c=>$('#cls-'+c.k).classList.toggle('on',S.sel===c.k));
+    $('#selname').textContent=CLS[S.sel].label;$('#pad').classList.toggle('armed',S.sel!=='car');
+    for(const m of ['L','A','R'])$('#mvn-'+m).textContent=ev.filter(e=>e.k==='veh'&&e.app===s.app&&e.m===m).length;
+    $('#qn').value=S.queue[s.app];$('#qn').textContent=S.queue[s.app];
+    const ql=ev.filter(e=>e.k==='queue'&&e.app===s.app);
+    $('#qlast').textContent=ql.length?`Last: ${ql[ql.length-1].n} at ${fT(ql[ql.length-1].t,1)} · ${ql.length} logged`:'None logged yet';
+  }else if(s.role==='ped'){
+    ['Pedestrian','Cyclist','Voi'].forEach(w=>$('#who-'+w).classList.toggle('on',S.who===w));
+    const c=pedCounts();CXS.forEach(k=>$('#cxn-'+k).textContent=c[k]||0);
+    $('#pedmap').innerHTML=mapSVG('ped');
+    const pd=ev.filter(e=>e.k==='pdelay');
+    $('#pdsum').textContent=pd.length?`${pd.length} waits timed · mean ${r1(pd.reduce((a,e)=>a+(e.t-e.t0),0)/pd.length/1000)} s`:'';
+    renderTimers();
+  }else{
+    for(const h of Object.keys(HEADS)){const last=sigState(h),el=$('#hd-'+h);
+      el.classList.toggle('g',last?.ch==='G');el.classList.toggle('u',!last);
+      $('#hs-'+h).textContent=last?.ch==='G'?(h==='P'?'Tap when it goes off':'Tap when it turns AMBER'):(h==='P'?'Tap when green man comes on':'Tap when it turns GREEN');
+      const st2=sigStats(h);$('#hx-'+h).textContent=st2;}
+    const bd=ev.filter(e=>e.k==='bus');
+    $('#bdsum').textContent=bd.length?`${bd.length} buses timed · mean ${r1(bd.reduce((a,e)=>a+(e.t-e.t0),0)/bd.length/1000)} s`:'';
+    renderTimers();
+  }
+}
+function sigStats(h){const ev=sesEv().filter(e=>e.k==='sig'&&e.h===h);const now=Date.now();
+  if(!ev.length)return 'No changes logged';
+  const last=ev[ev.length-1];let out=[];
+  if(last.ch==='G')out.push('green for '+mmss(now-last.t));
+  const g=ev.filter(e=>e.ch==='G');
+  for(let i=ev.length-1;i>0;i--){if(ev[i].ch==='A'&&ev[i-1].ch==='G'){out.push('last green '+Math.round((ev[i].t-ev[i-1].t)/1000)+' s');break}}
+  if(g.length>1){const c=(g[g.length-1].t-g[g.length-2].t)/1000;if(c<300)out.push('last cycle '+Math.round(c)+' s')}
+  return out.join(' · ')||'Waiting for next change';
+}
+function renderTimers(){const box=$('#timers');if(!box)return;const now=Date.now();
+  const mine=S.timers.filter(t=>t.ses===S.session.id&&t.st===S.station);
+  box.innerHTML=mine.map(t=>`<div class="timer"><button class="go" data-act="tstop" data-id="${t.id}"><span>${t.k==='bus'?'Bus · '+APP[t.app].road:'Waiting · '+CROSS[t.cx]}<br><span class="small muted">${t.k==='bus'?'Tap when it crosses the line':'Tap when they step off'}</span></span><b>${mmss(now-t.t0)}</b></button><button class="x" data-act="tcancel" data-id="${t.id}">Cancel</button></div>`).join('');
+}
+function endHTML(){
+  const ev=sesEv();const by=k=>ev.filter(e=>e.k===k);
+  const rows=[];
+  for(const a of APPS){const n=by('veh').filter(e=>e.app===a).length;if(n)rows.push([`Vehicles from ${APP[a].road}`,n])}
+  if(by('queue').length)rows.push(['Queues logged',by('queue').length]);
+  for(const k of CXS){const n=by('ped').filter(e=>e.cx===k).length;if(n)rows.push([`Crossing: ${CROSS[k]}`,n])}
+  if(by('pdelay').length)rows.push(['Pedestrian waits timed',by('pdelay').length]);
+  if(by('sig').length)rows.push(['Signal changes',by('sig').length]);
+  if(by('bus').length)rows.push(['Bus delays timed',by('bus').length]);
+  if(by('note').length)rows.push(['Notes',by('note').length]);
+  return `<header class="brand"><span class="eyebrow">Finish session</span><h1>Save your data</h1><p class="muted">${esc(S.session.obs)} · ${fD(S.session.start)} · ${fT(S.session.start)} to ${fT(Date.now())}</p></header>
+  <section class="card"><table class="sum"><tbody>${rows.length?rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(''):'<tr><td>Nothing logged yet</td><td>0</td></tr>'}</tbody></table></section>
+  <section class="card"><h3>1. Save the Excel file</h3><p class="small muted">It has your raw taps plus 15-minute tables in the same layout as the UK count sheet. Send it to Harry when you're done.</p>
+   <button class="btn primary block" data-act="export" id="exportBtn">Save Excel file</button>
+   <button class="btn block" data-act="copycsv">Copy data as text (backup)</button>
+   <textarea id="csvout" rows="4" hidden readonly></textarea></section>
+  <section class="card"><h3>2. Clear this phone</h3><p class="small muted">Only after your file is saved. This removes the session from this phone.</p>
+   ${confirmNew?`<p><b>Have you saved your file? This can't be undone.</b></p><div class="row"><button class="btn warn" data-act="clear">Yes, clear it</button><button class="btn" data-act="noclear">Cancel</button></div>`:`<button class="btn warn block" data-act="askclear">Clear and start a new session</button>`}</section>
+  <button class="btn block" data-act="resume">Back to counting</button>`;
+}
+function combineHTML(){
+  const obs=[...new Set(combineEvents.map(e=>e.obs))];
+  return `<header class="brand"><span class="eyebrow">Admin</span><h1>Combine group files</h1><p class="muted">Add everyone's saved Excel files (or text backups saved as .csv). Duplicates are removed, so adding the same file twice is safe.</p></header>
+  <section class="card"><label class="btn block" style="display:flex;align-items:center;justify-content:center" for="files">Add files</label>
+   <input id="files" type="file" accept=".xlsx,.csv,.txt" multiple hidden>
+   <div class="filelist">${combineFiles.length?combineFiles.map(f=>`<div><span>${esc(f.name)}</span><span class="muted">${f.n} entries</span></div>`).join(''):'<p class="muted small">No files added yet.</p>'}</div></section>
+  ${combineEvents.length?`<section class="card"><table class="sum"><tbody>
+   <tr><td>Observers</td><td>${obs.length}</td></tr><tr><td>Entries</td><td>${combineEvents.length}</td></tr>
+   <tr><td>Vehicles</td><td>${combineEvents.filter(e=>e.k==='veh').length}</td></tr><tr><td>Pedestrians and crossing cyclists</td><td>${combineEvents.filter(e=>e.k==='ped').length}</td></tr>
+   <tr><td>Days</td><td>${[...new Set(combineEvents.map(e=>fD(e.t)))].join(', ')}</td></tr></tbody></table>
+   <button class="btn primary block" data-act="saveCombined">Save combined workbook</button>
+   <button class="btn block" data-act="resetCombine">Start again</button></section>`:''}
+  <button class="btn block" data-act="home">Back</button>`;
+}
+
+/* ---------- actions ---------- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  if(b.dataset.act==='closeBrief'&&e.target!==b&&b.classList.contains('sheet-wrap'))return;
+  act(b.dataset.act,b.dataset,b);
+});
+document.addEventListener('change',e=>{if(e.target.id==='files')addFiles(e.target.files)});
+
+function act(a,d,el){
+  switch(a){
+  case 'obs':draft.obs=d.v;render();break;
+  case 'wx':draft.wx=d.v;render();break;
+  case 'start':S.session={id:uid(),obs:draft.obs,wx:draft.wx,start:Date.now()};S.screen='pick';S.station=null;save();render();break;
+  case 'resume':S.screen=S.station?'count':'pick';save();render();break;
+  case 'home':S.screen='setup';save();render();break;
+  case 'toCombine':S.screen='combine';render();break;
+  case 'brief':brief=d.st;renderSheet();if(S.screen==='pick')render();break;
+  case 'closeBrief':brief=null;renderSheet();if(S.screen==='pick')render();break;
+  case 'go':{const st=d.st;brief=null;
+    if(S.station!==st){if(S.station)log('off',{st:S.station});S.station=st;log('on',{st})}
+    S.sel='car';S.screen='count';save();render();window.scrollTo(0,0);break}
+  case 'switch':S.screen='pick';save();render();window.scrollTo(0,0);break;
+  case 'backCount':S.screen='count';render();break;
+  case 'sel':S.sel=d.k;save();refresh();break;
+  case 'veh':{const s=STN[S.station];const c=S.sel;log('veh',{app:s.app,m:d.m,cls:c});S.sel='car';save();flash(el);buzz();refresh();
+    toast(`${CLS[c].label} → ${APP[s.app][d.m]}`);break}
+  case 'qp':S.queue[STN[S.station].app]++;save();refresh();break;
+  case 'qm':{const a2=STN[S.station].app;S.queue[a2]=Math.max(0,S.queue[a2]-1);save();refresh();break}
+  case 'qlog':{const a2=STN[S.station].app;log('queue',{app:a2,n:S.queue[a2]});toast(`Queue of ${S.queue[a2]} logged`);S.queue[a2]=0;save();refresh();break}
+  case 'who':S.who=d.v;save();refresh();break;
+  case 'ped':{log('ped',{cx:d.cx,who:S.who});const w=S.who;S.who='Pedestrian';save();flash($('#cx-'+d.cx));buzz();refresh();toast(`${w} · ${CROSS[d.cx]}`);break}
+  case 'pstart':S.timers.push({id:uid(),k:'pdelay',cx:d.cx,t0:Date.now(),ses:S.session.id,st:S.station});save();refresh();break;
+  case 'bstart':S.timers.push({id:uid(),k:'bus',app:d.app,t0:Date.now(),ses:S.session.id,st:S.station});save();refresh();break;
+  case 'tstop':{const t=S.timers.find(x=>x.id===d.id);if(!t)break;S.timers=S.timers.filter(x=>x.id!==d.id);
+    log(t.k,t.k==='bus'?{app:t.app,t0:t.t0}:{cx:t.cx,t0:t.t0});buzz();toast(`${t.k==='bus'?'Bus delay':'Wait'} ${Math.round((Date.now()-t.t0)/1000)} s logged`);refresh();break}
+  case 'tcancel':S.timers=S.timers.filter(x=>x.id!==d.id);save();refresh();break;
+  case 'sig':{const last=sigState(d.h);const ch=last?.ch==='G'?'A':'G';log('sig',{h:d.h,ch});flash(el);buzz();refresh();break}
+  case 'undo':{const ev=S.events;let i=ev.length-1;
+    while(i>=0&&!(ev[i].ses===S.session.id&&!['on','off'].includes(ev[i].k)))i--;
+    if(i<0){toast('Nothing to undo')}else{const e=ev.splice(i,1)[0];save();toast('Undid: '+describe(e))}
+    refresh();break}
+  case 'note':{const v=$('#note').value.trim();if(!v){toast('Type a note first');break}log('note',{note:v});$('#note').value='';toast('Note saved');break}
+  case 'toEnd':brief=null;confirmNew=false;S.screen='end';save();render();window.scrollTo(0,0);break;
+  case 'export':doExport();break;
+  case 'copycsv':copyCSV();break;
+  case 'askclear':confirmNew=true;render();break;
+  case 'noclear':confirmNew=false;render();break;
+  case 'clear':S=fresh();save();draft={obs:null,wx:null};confirmNew=false;render();toast('Cleared. Ready for a new session.');break;
+  case 'saveCombined':saveCombined();break;
+  case 'resetCombine':combineFiles=[];combineEvents=[];render();break;
+  }
+}
+function describe(e){
+  if(e.k==='veh')return `${CLS[e.cls].label} → ${APP[e.app][e.m]}`;
+  if(e.k==='queue')return `queue of ${e.n}`;
+  if(e.k==='ped')return `${e.who} on ${CROSS[e.cx]}`;
+  if(e.k==='sig')return `${HEADS[e.h]} ${e.ch==='G'?'green':'amber'}`;
+  if(e.k==='bus')return 'bus delay';
+  if(e.k==='pdelay')return 'wait time';
+  if(e.k==='note')return 'note';return e.k;
+}
+setInterval(()=>{if(S.screen==='count'){const st=STN[S.station];
+  if(!st)return;const now=Date.now(),q0=qf(now);const c=$('#clock');
+  if(c){const inIv=sesEv().filter(e=>e.st===S.station&&TAPK[st.role].includes(e.k)&&e.t>=q0).length;c.textContent=`${fT(q0)}–${fT(q0+Q)} · ${mmss(q0+Q-now)} left`}
+  if(st.role==='sig')for(const h of Object.keys(HEADS)){const x=$('#hx-'+h);if(x)x.textContent=sigStats(h)}
+  if(st.role!=='veh')renderTimers();}},1000);
+
+/* ---------- export ---------- */
+const RAW=[['ID','id'],['Epoch ms','t'],['Date',null],['Time',null],['Observer','obs'],['Weather','wx'],['Session','ses'],['Station','st'],['Kind','k'],
+  ['Approach','app'],['Movement','m'],['Vehicle class','cls'],['Queue (veh)','n'],['Crossing','cx'],['User type','who'],['Signal','h'],['Change','ch'],['Start epoch ms','t0'],['Duration (s)',null],['Note','note']];
+function rawRows(ev){return [RAW.map(r=>r[0]),...ev.map(e=>RAW.map(([h,f])=>{
+  if(h==='Date')return fD(e.t);if(h==='Time')return fT(e.t,1);if(h==='Duration (s)')return e.t0?r1((e.t-e.t0)/1000):'';
+  const v=e[f];return v===undefined||v===null?'':v}))]}
+function parseRaw(rows){const out=[];for(const r of rows){if(!r.ID||!r.Kind)continue;const e={};
+  for(const [h,f] of RAW){if(!f)continue;let v=r[h];if(v===undefined||v==='')continue;if(['t','t0','n'].includes(f))v=Number(v);e[f]=typeof v==='number'||['t','t0','n'].includes(f)?v:String(v);}
+  if(e.id&&e.t&&e.k)out.push(e)}return out}
+
+function spans(ev){const by={};for(const e of ev)(by[e.ses]=by[e.ses]||[]).push(e);const out=[];
+  for(const k in by){const l=by[k].sort((a,b)=>a.t-b.t);let o=null;
+    for(const e of l){if(e.k==='on'){if(o){o.b=e.t;out.push(o)}o={st:e.st,a:e.t,obs:e.obs}}else if(e.k==='off'&&o){o.b=e.t;out.push(o);o=null}}
+    if(o){o.b=Math.max(l[l.length-1].t,o.a);out.push(o)}}
+  return out}
+function cover(sp,st,i0,i1){let m=0;for(const s of sp)if(s.st===st)m+=Math.max(0,Math.min(s.b,i1)-Math.max(s.a,i0));return Math.min(15,r1(m/60000))}
+const uniq=a=>[...new Set(a.filter(Boolean))].join(', ');
+const mean=a=>a.length?r1(a.reduce((x,y)=>x+y,0)/a.length):'';
+
+function buildWB(evIn){
+  const ev=evIn.slice().sort((a,b)=>a.t-b.t);const sp=spans(ev);const wb=XLSX.utils.book_new();
+  const add=(name,aoa,w)=>{const ws=XLSX.utils.aoa_to_sheet(aoa);if(w)ws['!cols']=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
+  // Summary
+  const ses={};for(const e of ev){const s=ses[e.ses]=ses[e.ses]||{obs:e.obs,wx:e.wx,a:e.t,b:e.t,st:new Set(),n:0};s.a=Math.min(s.a,e.t);s.b=Math.max(s.b,e.t);if(e.st)s.st.add(e.st);if(!['on','off'].includes(e.k))s.n++}
+  const sum=[['KB Junction Counter export'],['Site','Mayfield Rd / West Mains Rd / Esslemont Rd (Kings Buildings)'],['Created',fD(Date.now())+' '+fT(Date.now())],[],
+    ['Observer','Date','Start','End','Weather','Stations','Entries'],...Object.values(ses).map(s=>[s.obs,fD(s.a),fT(s.a),fT(s.b),s.wx,[...s.st].sort().join(', '),s.n]),[],
+    ['Stations'],...Object.entries(STN).map(([k,s])=>[k,s.title,s.corner+' corner'])];
+  add('Summary',sum,[14,12,8,8,16,12,10]);
+  // Turning counts
+  const keys=new Set();
+  for(const s of sp)if(STN[s.st]?.role==='veh')for(let iv=qf(s.a);iv<s.b;iv+=Q)keys.add(iv+'|'+STN[s.st].app);
+  for(const e of ev)if(e.k==='veh')keys.add(qf(e.t)+'|'+e.app);
+  const ks=[...keys].map(k=>{const [iv,app]=k.split('|');return [Number(iv),app]}).sort((a,b)=>a[0]-b[0]||APPS.indexOf(a[1])-APPS.indexOf(b[1]));
+  const tc=[['Date','Site/Junction','Observer','Weather','Interval Start','Interval End','Approach','Road','Movement','To','Car/Taxi','LGV/Van','HGV Rigid','HGV Artic','Bus/Coach','Motorcycle','Pedal Cycle','Voi e-bike','Total (veh)','PCU Total','Flow (PCU/h)','Minutes observed','Notes']];
+  const ivPcu={};
+  for(const [iv,app] of ks){const cov=cover(sp,VEHST[app],iv,iv+Q);
+    for(const m of ['L','A','R']){const es=ev.filter(e=>e.k==='veh'&&e.app===app&&e.m===m&&e.t>=iv&&e.t<iv+Q);
+      const c=CLASSES.map(cl=>es.filter(e=>e.cls===cl.k).length);const pcu=r1(CLASSES.reduce((a,cl,i)=>a+cl.pcu*c[i],0));
+      const ins=ev.filter(e=>e.st===VEHST[app]&&e.t>=iv&&e.t<iv+Q);
+      ivPcu[fD(iv)+'|'+iv]=(ivPcu[fD(iv)+'|'+iv]||{iv,apps:new Set(),pcu:0,veh:0});const P=ivPcu[fD(iv)+'|'+iv];P.pcu+=pcu;P.veh+=es.length;if(cov>=14)P.apps.add(app);
+      tc.push([fD(iv),'Kings Buildings',uniq(ins.map(e=>e.obs)),uniq(ins.map(e=>e.wx)),fT(iv),fT(iv+Q),APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,pcu,r1(pcu*4),cov,cov<14?`Partial interval: ${cov} of 15 min observed`:''])}}
+  add('Turning_Counts_15min',tc,[11,14,14,14,8,8,8,20,9,20,8,8,9,9,9,10,10,10,10,9,11,10,30]);
+  // Approach summary
+  const as=[['Approach','Road','Movement','To',...CLASSES.map(c=>c.x),'Total (veh)','PCU Total']];
+  for(const app of APPS)for(const m of ['L','A','R']){const es=ev.filter(e=>e.k==='veh'&&e.app===app&&e.m===m);const c=CLASSES.map(cl=>es.filter(e=>e.cls===cl.k).length);
+    as.push([APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,r1(CLASSES.reduce((a,cl,i)=>a+cl.pcu*c[i],0))])}
+  as.push([],['Totals across all observed time. Use Turning_Counts_15min for rates.']);
+  add('Approach_Summary',as,[9,20,9,20,8,8,9,9,9,10,10,10,10,9]);
+  // Peak hour
+  const ph=[['Date','Peak hour start','Peak hour end','Vehicles','PCU','Approaches fully observed in all 4 intervals','Note']];
+  const byDay={};for(const v of Object.values(ivPcu))(byDay[fD(v.iv)]=byDay[fD(v.iv)]||[]).push(v);
+  for(const day in byDay){const l=byDay[day].sort((a,b)=>a.iv-b.iv);let best=null;
+    for(let i=0;i<l.length;i++){const w=l.filter(x=>x.iv>=l[i].iv&&x.iv<l[i].iv+4*Q);if(w.length<4)continue;const p=w.reduce((a,x)=>a+x.pcu,0);if(!best||p>best.p)best={p,w,v:w.reduce((a,x)=>a+x.veh,0)}}
+    if(best){const full=APPS.filter(a=>best.w.every(x=>x.apps.has(a)));ph.push([day,fT(best.w[0].iv),fT(best.w[0].iv+4*Q),best.v,r1(best.p),full.map(a=>APP[a].compass).join(', ')||'none',full.length<4?'Not all approaches counted for the full hour, so treat with care':''])}
+    else ph.push([day,'','','','','','Less than an hour of counts'])}
+  add('Peak_Hour',ph,[11,14,13,9,8,30,50]);
+  // Queues
+  const qq=[['Date','Time','Approach','Road','Queue at end of red (veh)','Observer']];
+  for(const e of ev.filter(e=>e.k==='queue'))qq.push([fD(e.t),fT(e.t,1),APP[e.app].compass,APP[e.app].road,e.n,e.obs]);
+  qq.push([],['Approach','Road','Cycles logged','Mean queue','Max queue']);
+  for(const a of APPS){const l=ev.filter(e=>e.k==='queue'&&e.app===a).map(e=>e.n);qq.push([APP[a].compass,APP[a].road,l.length,mean(l),l.length?Math.max(...l):''])}
+  add('Queues',qq,[11,10,9,20,22,12]);
+  // Pedestrian counts
+  const pk=new Set();for(const s of sp)if(s.st==='E')for(let iv=qf(s.a);iv<s.b;iv+=Q)pk.add(iv);for(const e of ev)if(e.k==='ped')pk.add(qf(e.t));
+  const pc=[['Date','Interval Start','Interval End','Crossing','Pedestrians','Cyclists','Voi e-bikes','Total','Hourly rate (x4)','Minutes observed','Notes']];
+  for(const iv of [...pk].sort((a,b)=>a-b)){const cov=cover(sp,'E',iv,iv+Q);
+    for(const k of CXS){const es=ev.filter(e=>e.k==='ped'&&e.cx===k&&e.t>=iv&&e.t<iv+Q);const p=es.filter(e=>e.who==='Pedestrian').length,c=es.filter(e=>e.who==='Cyclist').length,v=es.filter(e=>e.who==='Voi').length;
+      pc.push([fD(iv),fT(iv),fT(iv+Q),CROSS[k],p,c,v,es.length,es.length*4,cov,cov<14?`Partial interval: ${cov} of 15 min observed`:''])}}
+  add('Pedestrian_Counts',pc,[11,8,8,24,11,9,10,7,14,10,30]);
+  // Ped delay
+  const pd=[['Date','Arrived at kerb','Stepped off','Crossing','Delay (s)','Observer']];
+  for(const e of ev.filter(e=>e.k==='pdelay'))pd.push([fD(e.t),fT(e.t0,1),fT(e.t,1),CROSS[e.cx],r1((e.t-e.t0)/1000),e.obs]);
+  pd.push([],['Crossing','Samples','Mean delay (s)','Max delay (s)']);
+  for(const k of CXS){const l=ev.filter(e=>e.k==='pdelay'&&e.cx===k).map(e=>(e.t-e.t0)/1000);pd.push([CROSS[k],l.length,mean(l),l.length?r1(Math.max(...l)):''])}
+  add('Pedestrian_Delay',pd,[11,14,12,24,10,12]);
+  // Bus delay
+  const bd=[['Date','Stopped at red','Crossed stop line','Approach','Road','Delay (s)','Observer']];
+  for(const e of ev.filter(e=>e.k==='bus'))bd.push([fD(e.t),fT(e.t0,1),fT(e.t,1),APP[e.app].compass,APP[e.app].road,r1((e.t-e.t0)/1000),e.obs]);
+  bd.push([],['Approach','Road','Buses timed','Mean delay (s)','Max delay (s)']);
+  for(const a of APPS){const l=ev.filter(e=>e.k==='bus'&&e.app===a).map(e=>(e.t-e.t0)/1000);bd.push([APP[a].compass,APP[a].road,l.length,mean(l),l.length?r1(Math.max(...l)):''])}
+  add('Bus_Delay',bd,[11,14,16,9,20,10,12]);
+  // Signals
+  const sg=ev.filter(e=>e.k==='sig');const sl=[['Date','Signal','Green start','Green end (amber)','Green (s)','Cycle (s) since previous green','Next signal to go green','Gap to next green (s)','Observer']];
+  const stats={};
+  for(const h of Object.keys(HEADS)){const l=sg.filter(e=>e.h===h);let prevG=null;stats[h]={g:[],c:[]};
+    for(let i=0;i<l.length;i++){if(l[i].ch!=='G')continue;const G=l[i];const A=l[i+1]&&l[i+1].ch==='A'?l[i+1]:null;
+      const green=A?r1((A.t-G.t)/1000):'';const cyc=prevG&&G.t-prevG.t<300000?r1((G.t-prevG.t)/1000):'';prevG=G;
+      let nxt='',gap='';if(A){const n=sg.find(e=>e.ch==='G'&&e.h!==h&&e.t>A.t&&e.t-A.t<60000);if(n){nxt=HEADS[n.h];gap=r1((n.t-A.t)/1000)}}
+      if(green!=='')stats[h].g.push(green);if(cyc!=='')stats[h].c.push(cyc);
+      sl.push([fD(G.t),HEADS[h],fT(G.t,1),A?fT(A.t,1):'',green,cyc,nxt,gap,G.obs])}}
+  sl.push([],['Gap to next green = amber + all-red before the next stage starts (the intergreen, as seen by eye).']);
+  add('Signal_Log',sl,[11,26,11,15,9,26,26,18,12]);
+  const ss=[['Signal','Greens timed','Mean green (s)','Min green (s)','Max green (s)','Cycles timed','Mean cycle (s)','Min cycle (s)','Max cycle (s)','Green ratio g/C']];
+  for(const h of Object.keys(HEADS)){const g=stats[h].g,c=stats[h].c;const mg=mean(g),mc=mean(c);
+    ss.push([HEADS[h],g.length,mg,g.length?Math.min(...g):'',g.length?Math.max(...g):'',c.length,mc,c.length?Math.min(...c):'',c.length?Math.max(...c):'',mg!==''&&mc!==''?Math.round(mg/mc*100)/100:''])}
+  add('Signal_Summary',ss,[26,12,14,13,13,12,14,13,13,14]);
+  // Notes
+  const nt=[['Date','Time','Station','Observer','Note']];for(const e of ev.filter(e=>e.k==='note'))nt.push([fD(e.t),fT(e.t,1),e.st||'',e.obs,e.note]);
+  add('Notes',nt,[11,10,8,12,60]);
+  add('PCU_Factors',[['Class','PCU factor'],...CLASSES.map(c=>[c.x,c.pcu]),[],['Defaults from the course template. Voi e-bikes use the pedal cycle value.']],[14,10]);
+  add('Raw_Log',rawRows(ev),[12,14,11,9,10,14,12,8,7,9,9,12,11,9,11,7,7,14,11,30]);
+  return wb;
+}
+
+async function saveFile(name,wb){
+  const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+  if(!window.claude?.use){const url=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);toast('Saved '+name);return true}
+  let dl=null;try{dl=await window.claude.use('downloads')}catch(e){dl=null}
+  if(!dl){toast('Saving files is not available here. Use "Copy data as text" instead.');return false}
+  try{await dl.save({filename:name,data:new Blob([buf])});toast('Saved '+name);return true}
+  catch(err){toast(err?.code==='declined'?'Save cancelled':'Could not save: '+(err?.message||err?.code||'unknown error'));return false}
+}
+function doExport(){const ev=sesEv();if(!ev.length){toast('Nothing to export yet');return}
+  const name=`KB_${S.session.obs.replace(/\s+/g,'')}_${fISO(S.session.start)}_${fT(S.session.start).replace(':','')}.xlsx`;
+  saveFile(name,buildWB(ev))}
+function copyCSV(){const ev=sesEv();const ws=XLSX.utils.aoa_to_sheet(rawRows(ev));const csv=XLSX.utils.sheet_to_csv(ws);
+  const ta=$('#csvout');ta.hidden=false;ta.value=csv;
+  const fallback=()=>{ta.focus();ta.select();toast('Text selected. Copy it and send it to Harry.')};
+  try{navigator.clipboard.writeText(csv).then(()=>toast('Copied. Paste it into a message to Harry.'),fallback)}catch(e){fallback()}}
+async function addFiles(list){
+  for(const f of list){try{let rows;
+    if(/\.xlsx$/i.test(f.name)){const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});const ws=wb.Sheets['Raw_Log'];if(!ws){toast(f.name+' has no Raw_Log sheet');continue}rows=XLSX.utils.sheet_to_json(ws,{defval:''})}
+    else{const wb=XLSX.read(await f.text(),{type:'string'});rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''})}
+    const ev=parseRaw(rows);const have=new Set(combineEvents.map(e=>e.id));const add=ev.filter(e=>!have.has(e.id));
+    combineEvents.push(...add);combineFiles.push({name:f.name,n:ev.length})}
+  catch(e){toast('Could not read '+f.name)}}
+  render()}
+function saveCombined(){if(!combineEvents.length)return;const d=[...new Set(combineEvents.map(e=>fISO(e.t)))].sort();
+  saveFile(`KB_Combined_${d[0]}${d.length>1?'_to_'+d[d.length-1]:''}.xlsx`,buildWB(combineEvents))}
+
+window.__kb={buildWB,parseRaw,rawRows,get S(){return S}};
+if(S.screen==='count'&&!STN[S.station])S.screen='pick';
+render();
+</script>
+
+</body>
+</html>
