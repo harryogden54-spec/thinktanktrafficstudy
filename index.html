@@ -64,6 +64,8 @@ p{margin:0}
 .brand .sub{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.02em}
 ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .saved{background:color-mix(in srgb,var(--go) 14%,var(--surface));border:1.5px solid var(--go);border-radius:var(--r);padding:10px 12px;font-weight:700;font-size:14px}
+.linkbtn{background:none;border:0;color:var(--stop);font-weight:700;font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:12px;align-self:center;min-height:44px}
+.discard{border-color:var(--stop)}
 .warnbar{background:var(--stop);color:#fff;border-radius:var(--r);padding:10px 14px;font-weight:600;font-size:14px}
 
 /* map */
@@ -264,7 +266,7 @@ try{localStorage.setItem(KEY+'.t','1');localStorage.removeItem(KEY+'.t')}catch(e
 const LAST=KEY+'.last';
 function lastPick(){try{return JSON.parse(localStorage.getItem(LAST))||{}}catch(e){return {}}}
 let draft={obs:S.session?.obs||lastPick().obs||null,wx:null};
-let brief=null; let confirmNew=false; let savedAt=null;
+let brief=null; let confirmNew=false; let savedAt=null; let confirmDiscard=false;
 
 const $=s=>document.querySelector(s);
 const pad=n=>String(n).padStart(2,'0');
@@ -367,7 +369,8 @@ function setupHTML(){
     return head+`<section class="card"><span class="eyebrow">Session in progress</span>
       <h2>${esc(live.obs)}</h2><p class="muted">Started ${fT(live.start)} on ${fD(live.start)} · ${n} entries · ${esc(live.wx)}</p>
       <button class="btn primary block" data-act="resume">Resume counting</button>
-      <button class="btn block" data-act="toEnd">Finish and save data</button></section>`}
+      <button class="btn block" data-act="toEnd">Finish and save data</button>
+      ${confirmDiscard?`<section class="card discard" id="discardBox"><h3>Discard this session?</h3><p class="small">This deletes all ${sesEv().filter(e=>!['on','off'].includes(e.k)).length} entries from this phone and goes back to the start. It can't be undone.</p><div class="row"><button class="btn warn" data-act="discard">Discard and go home</button><button class="btn" data-act="keep">Keep it</button></div></section>`:`<button class="linkbtn" data-act="askdiscard">Discard this session</button>`}</section>`}
   return head+`
   <section class="card"><h2>Who's counting?</h2>
     <div class="grid3">${NAMES.map(n=>`<button class="pick ${draft.obs===n?'on':''}" data-act="obs" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div></section>
@@ -389,7 +392,8 @@ function pickHTML(){
   <section class="card"><h3>Before you start</h3><ul style="margin:0;padding-left:18px">
     <li>Hi-vis on. No headphones or earpieces.</li><li>Stand at least 1 m back from the kerb, on the footway.</li>
     <li>Stay within sight of your buddy.</li><li>Never walk while looking at your phone.</li></ul></section>
-  ${cur?`<button class="btn block" data-act="backCount">Back to station ${cur}</button>`:`<button class="btn block" data-act="home">Back</button>`}`;
+  ${cur?`<button class="btn block" data-act="backCount">Back to station ${cur}</button>`:`<button class="btn block" data-act="home">Back</button>`}
+  ${confirmDiscard?`<section class="card discard" id="discardBox"><h3>Discard this session?</h3><p class="small">This deletes all ${sesEv().filter(e=>!['on','off'].includes(e.k)).length} entries from this phone and goes back to the start. It can't be undone.</p><div class="row"><button class="btn warn" data-act="discard">Discard and go home</button><button class="btn" data-act="keep">Keep it</button></div></section>`:`<button class="linkbtn" data-act="askdiscard">Discard this session</button>`}`;
 }
 function renderSheet(){
   let w=document.querySelector('.sheet-wrap');if(w)w.remove();
@@ -433,7 +437,8 @@ function countHTML(){const st=S.station,s=STN[st];let body='';
   <section class="card"><h3>Add a note</h3><textarea id="note" rows="2" placeholder="e.g. bin lorry blocking left lane, 2 min"></textarea><button class="btn" data-act="note">Save note</button></section>
   <section class="card"><h3>Weather changed?</h3><div class="row">${WEATHER.map(w=>`<button class="chip ${S.session.wx===w?'on':''}" data-act="wxnow" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div></section>
   <button class="btn warn block" data-act="toEnd">Finish session and save data</button>
-  <p class="small muted" style="text-align:center">Saved on this phone as you go. Safe to lock the screen or lose signal.</p>`;
+  <p class="small muted" style="text-align:center">Saved on this phone as you go. Safe to lock the screen or lose signal.</p>
+  ${confirmDiscard?`<section class="card discard" id="discardBox"><h3>Discard this session?</h3><p class="small">This deletes all ${sesEv().filter(e=>!['on','off'].includes(e.k)).length} entries from this phone and goes back to the start. It can't be undone.</p><div class="row"><button class="btn warn" data-act="discard">Discard and go home</button><button class="btn" data-act="keep">Keep it</button></div></section>`:`<button class="linkbtn" data-act="askdiscard">Discard this session</button>`}`;
 }
 function refresh(){
   if(S.screen!=='count')return;const st=S.station,s=STN[st],ev=sesEv();
@@ -514,14 +519,14 @@ function act(a,d,el){
   case 'wx':draft.wx=d.v;render();break;
   case 'start':savedAt=null;try{localStorage.setItem(LAST,JSON.stringify({obs:draft.obs}))}catch(e){}
     S.session={id:uid(),obs:draft.obs,wx:draft.wx,start:Date.now()};S.screen='pick';S.station=null;save();render();break;
-  case 'resume':S.screen=S.station?'count':'pick';save();render();break;
+  case 'resume':confirmDiscard=false;S.screen=S.station?'count':'pick';save();render();break;
   case 'home':S.screen='setup';save();render();break;
   case 'brief':brief=d.st;renderSheet();if(S.screen==='pick')render();break;
   case 'closeBrief':brief=null;renderSheet();if(S.screen==='pick')render();break;
   case 'go':{const st=d.st;brief=null;
     if(S.station!==st){if(S.station)log('off',{st:S.station});S.station=st;log('on',{st})}
     S.sel='car';S.screen='count';save();render();window.scrollTo(0,0);break}
-  case 'switch':S.screen='pick';save();render();window.scrollTo(0,0);break;
+  case 'switch':confirmDiscard=false;S.screen='pick';save();render();window.scrollTo(0,0);break;
   case 'backCount':S.screen='count';render();break;
   case 'sel':S.sel=d.k;save();refresh();break;
   case 'veh':{const s=STN[S.station];const c=S.sel;log('veh',{app:s.app,m:d.m,cls:c});S.sel='car';save();flash(el);buzz();refresh();break}
@@ -541,6 +546,9 @@ function act(a,d,el){
     if(i<0){toast('Nothing to undo at this station')}else{const e=ev.splice(i,1)[0];save();toast('Undid: '+describe(e))}
     refresh();break}
   case 'wxnow':if(S.session.wx!==d.v){S.session.wx=d.v;log('note',{note:'Weather now: '+d.v});save();render();toast('Weather updated')}break;
+  case 'askdiscard':confirmDiscard=true;render();setTimeout(()=>$('#discardBox')?.scrollIntoView({behavior:'smooth',block:'center'}),30);break;
+  case 'keep':confirmDiscard=false;render();break;
+  case 'discard':{S.timers=[];S=fresh();save();draft={obs:lastPick().obs||null,wx:null};confirmDiscard=false;brief=null;savedAt=null;render();window.scrollTo(0,0);toast('Session discarded');break}
   case 'note':{const v=$('#note').value.trim();if(!v){toast('Type a note first');break}log('note',{note:v});$('#note').value='';toast('Note saved');break}
   case 'toEnd':brief=null;confirmNew=false;S.screen='end';save();render();window.scrollTo(0,0);break;
   case 'export':doExport();break;
