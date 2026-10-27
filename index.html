@@ -187,9 +187,6 @@ details[open]{padding-bottom:14px}
 
 textarea{width:100%;box-sizing:border-box;font:inherit;border:0;border-radius:var(--r-s);padding:12px;background:var(--tile);color:var(--ink)}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;font-size:15px;z-index:30;max-width:calc(100% - 32px);text-align:center}
-#ivsum{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:528px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:var(--r);padding:14px 16px;z-index:25;text-align:left;display:flex;flex-direction:column;gap:4px;font-size:15px;box-shadow:0 8px 24px rgb(0 0 0 / .25)}
-#ivsum b{font-size:16px}
-#ivsum .x{opacity:.7;font-size:13px}
 table.sum{width:100%;border-collapse:collapse;font-size:15px}
 table.sum td{padding:8px 2px;border-bottom:1px solid var(--line)}
 table.sum tr:last-child td{border-bottom:0}
@@ -197,7 +194,6 @@ table.sum td:last-child{text-align:right;font-weight:650}
 </style>
 
 <main id="app"></main>
-<button id="ivsum" type="button" data-act="hidesum" hidden></button>
 <div id="toast" role="status" hidden></div>
 
 <script src="xlsx.full.min.js"></script>
@@ -206,7 +202,7 @@ table.sum td:last-child{text-align:right;font-weight:650}
 const NAMES=['Harry O','Murray','Harry J','Ciaran','Joseph','Ollie'];
 const WEATHER=['Dry, bright','Dry, overcast','Light rain','Heavy rain','Windy','Low light'];
 const DURS=[15,30,45,60,90,120];
-const IVS=[5,10,15,30,45,60];
+const IV=15; // export tables use 15-min blocks from the start time
 const APP={
   N:{road:'Mayfield Rd (north)',compass:'North',L:'Esslemont Rd',A:'Mayfield Rd (south)',R:'West Mains Rd'},
   E:{road:'Esslemont Rd',compass:'East',L:'Mayfield Rd (south)',A:'West Mains Rd',R:'Mayfield Rd (north)'},
@@ -288,7 +284,7 @@ let S=load()||fresh();
 try{localStorage.setItem(KEY+'.t','1');localStorage.removeItem(KEY+'.t')}catch(e){storageOK=false}
 const LAST=KEY+'.last';
 function lastPick(){try{return JSON.parse(localStorage.getItem(LAST))||{}}catch(e){return {}}}
-function newDraft(){const l=lastPick();return {obs:l.obs||null,wx:null,time:'',dur:l.dur||60,iv:l.iv||15}}
+function newDraft(){const l=lastPick();return {obs:l.obs||null,wx:null,time:'',dur:l.dur||60}}
 let draft=newDraft();
 let brief=null, confirmNew=false, savedAt=null, confirmDiscard=false;
 
@@ -315,8 +311,7 @@ function windowTag(t,p){return t<p.t0?'Before start':t>=planEnd(p)?'After end':'
 function planState(now){const p=S.session;if(!p||!p.t0)return null;now=now||Date.now();const end=planEnd(p);
   if(now<p.t0)return {code:'pre',left:p.t0-now};
   if(now>=end)return {code:'end',end};
-  const a=binStart(now,p),b=binEnd(a,p),i=Math.round((a-p.t0)/(p.iv*MIN));
-  return {code:i,i,a,b,n:nIv(p),left:b-now,frac:(now-a)/(b-a)}}
+  return {code:'run',left:end-now,frac:(now-p.t0)/(end-p.t0)}}
 
 function log(k,f){const e=Object.assign({id:uid(),t:Date.now(),k,st:S.station,obs:S.session.obs,wx:S.session.wx,ses:S.session.id},f||{});S.events.push(e);save();return e}
 function sesEv(){return S.events.filter(e=>e.ses===S.session?.id)}
@@ -336,25 +331,15 @@ function unlockAudio(){try{actx=actx||new (window.AudioContext||window.webkitAud
 function beep(n,len,freq){if(!actx)return;try{for(let i=0;i<n;i++){const t=actx.currentTime+i*(len+0.12);const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=freq||880;o.type='sine';
   g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+len);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+len+0.05)}}catch(e){}}
 function alertStart(){beep(2,0.18,988);buzz([200,100,200]);toast('Counting has started')}
-function alertInterval(){beep(1,0.25,880);buzz(300)}
 function alertEnd(){beep(3,0.35,740);buzz([400,150,400,150,400]);toast("Time's up")}
-function showSummary(i){
-  if(S.screen!=='count'||!S.station)return;const p=S.session,L=p.iv*MIN,a=p.t0+i*L,b=binEnd(a,p),st=STN[S.station];
-  const ev=sesEv().filter(e=>e.st===S.station&&e.t>=a&&e.t<b);let line='';
-  if(st.role==='veh'){const v=ev.filter(e=>e.k==='veh');line=`${v.length} vehicles · ${['L','A','R'].map(m=>MVS[m]+' '+v.filter(e=>e.m===m).length).join(' · ')}`;const q=ev.filter(e=>e.k==='queue').length;if(q)line+=` · ${q} queues`}
-  else if(st.role==='ped'){const v=ev.filter(e=>e.k==='ped');line=`${v.length} people · `+CXS.map(k=>(k==='D'?'Diag':k)+' '+v.filter(e=>e.cx===k).length).join(' · ')}
-  else{line=`${ev.filter(e=>e.k==='sig').length} signal changes · ${ev.filter(e=>e.k==='bus').length} buses timed`}
-  const box=$('#ivsum');box.innerHTML=`<b>Interval ${i+1} done · ${fT(a)}–${fT(b)}</b><span>${line}</span><span class="x">Tap to close</span>`;box.hidden=false;
-  clearTimeout(showSummary._t);showSummary._t=setTimeout(()=>box.hidden=true,10000)}
-
 let prevCode=null;
 function tick(){
   const ps=planState();if(!ps){prevCode=null;return}
   if(prevCode!==null&&ps.code!==prevCode){
-    if(prevCode==='pre'){ps.code==='end'?alertEnd():alertStart()}
-    else if(typeof prevCode==='number'){showSummary(prevCode);ps.code==='end'?alertEnd():alertInterval();if(S.screen==='count')renderStatus()}
+    if(ps.code==='run')alertStart();
+    else if(ps.code==='end')alertEnd();
+    if(S.screen==='count')renderStatus();
   }
-  if(prevCode==='pre'&&ps.code!=='pre'&&S.screen==='count')renderStatus();
   prevCode=ps.code;
   if(S.screen!=='count')return;const st=STN[S.station];if(!st)return;
   clockUpdate(ps);
@@ -365,7 +350,7 @@ function tick(){
 function clockUpdate(ps){const c=$('#clock'),pg=$('#prog');if(!c)return;c.className='';
   if(ps.code==='pre'){c.textContent=`Starts ${fT(S.session.t0)} · in ${mmss(ps.left)}`;c.className='pre';pg.style.width='0%'}
   else if(ps.code==='end'){c.textContent=`Finished at ${fT(ps.end)}`;c.className='over';pg.style.width='100%'}
-  else{c.textContent=`${ps.i+1} of ${ps.n} · ${fT(ps.a)}–${fT(ps.b)} · ${mmss(ps.left)} left`;pg.style.width=(ps.frac*100)+'%'}}
+  else{c.textContent=`${fT(S.session.t0)}–${fT(planEnd(S.session))} · ${mmss(ps.left)} left`;pg.style.width=(ps.frac*100)+'%'}}
 
 let wake=null;
 async function keepAwake(){try{if('wakeLock' in navigator&&!wake){wake=await navigator.wakeLock.request('screen');wake.addEventListener('release',()=>wake=null)}}catch(e){}}
@@ -437,7 +422,7 @@ function render(){
   renderSheet();
 }
 const discardHTML=()=>confirmDiscard?`<section class="card" id="discardBox"><h3>Discard this session?</h3><p class="small">This deletes all ${entryCount()} entries from this phone and goes back to the start. It can't be undone.</p><div class="row"><button class="btn warn" data-act="discard">Discard and go home</button><button class="btn" data-act="keep">Keep it</button></div></section>`:`<button class="linkbtn" data-act="askdiscard">Discard this session</button>`;
-const planLine=p=>`${fT(p.t0)}–${fT(planEnd(p))} · ${p.dur} min · ${p.iv}-min intervals`;
+const planLine=p=>`${fT(p.t0)}–${fT(planEnd(p))} · ${p.dur} min`;
 function setupHTML(){
   const live=S.session;
   const head=`<header class="brand"><span class="eyebrow">CIVE10033 · Traffic Think Tank</span><h1>KB Junction Counter</h1></header>`;
@@ -452,8 +437,7 @@ function setupHTML(){
   step(2,draft.wx,'Weather now',`<div class="row">${WEATHER.map(w=>`<button class="chip ${draft.wx===w?'on':''}" data-act="wx" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div>`)+
   step(3,draft.time,'Start time',`<div class="timein"><input type="time" id="t0" step="60" value="${draft.time}" aria-label="Start time"><button class="chip" data-act="now">Now</button></div><p class="hint">Use the time the group agreed. Everyone should enter the same.</p>`)+
   step(4,true,'Duration',`<div class="row">${DURS.map(d=>`<button class="chip ${draft.dur===d?'on':''}" data-act="dur" data-v="${d}">${d<60?d+' min':(d/60)+(d===60?' hour':' hours')}</button>`).join('')}</div>`)+
-  step(5,true,'Interval length',`<div class="row">${IVS.map(v=>`<button class="chip ${draft.iv===v?'on':''}" data-act="iv" data-v="${v}" ${v>draft.dur?'disabled':''}>${v<60?v+' min':'1 hour'}</button>`).join('')}</div><p class="hint">Counts are grouped into intervals from the start time.</p>`)+
-  `<button class="btn primary block" data-act="start" ${ok?'':'disabled'}>${ok?`Start · ${draft.time} · ${draft.dur} min · ${draft.iv}-min intervals`:'Fill in the steps above'}</button>
+  `<button class="btn primary block" data-act="start" ${ok?'':'disabled'}>${ok?`Start · ${draft.time} · ${draft.dur} min`:'Fill in the steps above'}</button>
   <p class="hint" style="text-align:center">Taps are saved on this phone as you go. You can open the counter before the start time.</p>`;
 }
 function pickHTML(){
@@ -591,18 +575,17 @@ document.addEventListener('click',e=>{
   act(b.dataset.act,b.dataset,b);
 });
 document.addEventListener('input',e=>{if(e.target.id==='t0'){draft.time=e.target.value;const btn=document.querySelector('[data-act=start]');const ok=draft.obs&&draft.wx&&draft.time;
-  btn.disabled=!ok;btn.textContent=ok?`Start · ${draft.time} · ${draft.dur} min · ${draft.iv}-min intervals`:'Fill in the steps above';e.target.closest('.step').classList.toggle('done',!!draft.time)}});
+  btn.disabled=!ok;btn.textContent=ok?`Start · ${draft.time} · ${draft.dur} min`:'Fill in the steps above';e.target.closest('.step').classList.toggle('done',!!draft.time)}});
 
 function act(a,d,el){
   switch(a){
   case 'obs':draft.obs=d.v;render();break;
   case 'wx':draft.wx=d.v;render();break;
   case 'now':{const n=new Date();draft.time=pad(n.getHours())+':'+pad(n.getMinutes());render();break}
-  case 'dur':draft.dur=+d.v;if(draft.iv>draft.dur)draft.iv=IVS.filter(v=>v<=draft.dur).pop();render();break;
-  case 'iv':draft.iv=+d.v;render();break;
+  case 'dur':draft.dur=+d.v;render();break;
   case 'start':{if(!(draft.obs&&draft.wx&&draft.time))break;unlockAudio();savedAt=null;
-    try{localStorage.setItem(LAST,JSON.stringify({obs:draft.obs,dur:draft.dur,iv:draft.iv}))}catch(e){}
-    S.session={id:uid(),obs:draft.obs,wx:draft.wx,start:Date.now(),t0:timeToday(draft.time),dur:draft.dur,iv:draft.iv};
+    try{localStorage.setItem(LAST,JSON.stringify({obs:draft.obs,dur:draft.dur}))}catch(e){}
+    S.session={id:uid(),obs:draft.obs,wx:draft.wx,start:Date.now(),t0:timeToday(draft.time),dur:draft.dur,iv:IV};
     prevCode=null;S.screen='pick';S.station=null;save();render();window.scrollTo(0,0);break}
   case 'resume':unlockAudio();confirmDiscard=false;S.screen=S.station?'count':'pick';save();render();break;
   case 'home':S.screen='setup';save();render();break;
@@ -631,7 +614,6 @@ function act(a,d,el){
     if(i<0)toast('Nothing to undo at this station');else{const e=ev.splice(i,1)[0];save();toast('Undid: '+describe(e))}
     refresh();break}
   case 'wxnow':if(S.session.wx!==d.v){S.session.wx=d.v;log('note',{note:'Weather now: '+d.v});save();render();toast('Weather updated')}break;
-  case 'hidesum':$('#ivsum').hidden=true;break;
   case 'askdiscard':confirmDiscard=true;render();setTimeout(()=>$('#discardBox')?.scrollIntoView({behavior:'smooth',block:'center'}),30);break;
   case 'keep':confirmDiscard=false;render();break;
   case 'discard':S=fresh();save();draft=newDraft();draft.time=nextFive();confirmDiscard=false;brief=null;savedAt=null;prevCode=null;render();window.scrollTo(0,0);toast('Session discarded');break;
@@ -681,7 +663,7 @@ function buildWB(evIn,p){
   const add=(name,aoa,w)=>{const ws=XLSX.utils.aoa_to_sheet(aoa);if(w)ws['!cols']=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
   const stations=[...new Set(ev.map(e=>e.st).filter(Boolean))].sort();
   const sum=[['KB Junction Counter export'],['Site','Mayfield Rd / West Mains Rd / Esslemont Rd (Kings Buildings)'],
-    ['Observer',p.obs],['Date',fD(p.t0)],['Planned start',fT(p.t0)],['Planned end',fT(planEnd(p))],['Duration (min)',p.dur],['Interval (min)',p.iv],
+    ['Observer',p.obs],['Date',fD(p.t0)],['Planned start',fT(p.t0)],['Planned end',fT(planEnd(p))],['Duration (min)',p.dur],['Table interval (min)',p.iv],
     ['Weather',uniq(ev.map(e=>e.wx))],['Stations used',stations.join(', ')],['Entries',ev.filter(e=>!['on','off'].includes(e.k)).length],
     ['Entries outside the planned window',ev.filter(e=>!['on','off','note'].includes(e.k)&&windowTag(e.t,p)!=='Yes').length],
     ['Created',fD(Date.now())+' '+fT(Date.now())],[],['Stations'],...Object.entries(STN).map(([k,s])=>[k,s.title,s.corner+' corner'])];
@@ -781,7 +763,7 @@ function copyCSV(){const csv=csvText();const ta=$('#csvout');ta.hidden=false;ta.
   try{navigator.clipboard.writeText(csv).then(()=>toast('Copied. Paste it into a message to Harry.'),fallback)}catch(e){fallback()}}
 
 /* ---------- boot ---------- */
-if(S.session&&!S.session.t0){S.session.t0=S.session.start;S.session.dur=S.session.dur||120;S.session.iv=S.session.iv||15;save()}
+if(S.session&&!S.session.t0){S.session.t0=S.session.start;S.session.dur=S.session.dur||120;S.session.iv=S.session.iv||IV;save()}
 if(S.screen==='count'&&!STN[S.station])S.screen='pick';
 if(!['setup','pick','count','end'].includes(S.screen))S.screen='setup';
 if(!draft.time)draft.time=nextFive();
