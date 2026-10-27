@@ -16,169 +16,188 @@
 </head>
 <body>
 <style>
-/* Layout: one-column field tool, road-sign type, big tap targets, hi-vis yellow for "selected" */
+/* Layout: calm one-column field tool. Flat tiles, few borders, road-yellow only for "selected" and progress. */
 :root{
-  --bg:#EEF0EC; --surface:#FFFFFF; --ink:#15181B; --muted:#596169; --line:#D3D8D1;
-  --tarmac:#3B4046; --verge:#DCE3D6; --lane:#F4F4F0; --marking:#F2C200; --on-marking:#1B1700;
-  --go:#1C8A4A; --stop:#C7362C; --amber:#E0950A; --toucan:#2FA35B; --voi:#E2546A;
-  --display:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; --body:var(--display); --mono:var(--display);
-  --r:12px; --shadow:0 1px 2px rgb(20 24 28 / .06),0 2px 8px rgb(20 24 28 / .05); --surface-2:#F6F7F4;
+  --bg:#F6F6F3; --surface:#FFFFFF; --tile:#EFF0EC; --tile-2:#E5E7E1; --ink:#17191C; --muted:#687077; --line:#E3E4DF;
+  --tarmac:#34393F; --tarmac-2:#272B30; --verge:#E6EAE1; --lane:#F4F4F0; --marking:#F2C200; --on-marking:#1B1700;
+  --go:#1C8A4A; --stop:#C7362C; --amber:#D98E07; --toucan:#2FA35B; --voi:#DB4D63;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r:16px; --r-s:12px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#111417; --surface:#1B1F23; --ink:#ECEFEA; --muted:#9BA4AC; --line:#2F353B;
-  --tarmac:#454B52; --verge:#1F2A22; --lane:#C9CCC6; --marking:#F5C518; --on-marking:#1B1700;
-  --go:#38B26A; --stop:#E5574C; --amber:#F0A92A; --toucan:#3FBF6E; --voi:#F06C80; --surface-2:#22272C; --shadow:none; color-scheme:dark}}
+  --bg:#0F1113; --surface:#181B1E; --tile:#22262A; --tile-2:#2C3136; --ink:#EDEEEA; --muted:#9AA1A8; --line:#2A2E33;
+  --tarmac:#3A4047; --tarmac-2:#2A2F34; --verge:#1A221C; --lane:#C9CCC6; --marking:#F5C518; --on-marking:#1B1700;
+  --go:#3BB46D; --stop:#E8594E; --amber:#F0A92A; --toucan:#3FBF6E; --voi:#F06C80; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#111417; --surface:#1B1F23; --ink:#ECEFEA; --muted:#9BA4AC; --line:#2F353B;
-  --tarmac:#454B52; --verge:#1F2A22; --lane:#C9CCC6; --marking:#F5C518; --on-marking:#1B1700;
-  --go:#38B26A; --stop:#E5574C; --amber:#F0A92A; --toucan:#3FBF6E; --voi:#F06C80; --surface-2:#22272C; --shadow:none; color-scheme:dark}
+  --bg:#0F1113; --surface:#181B1E; --tile:#22262A; --tile-2:#2C3136; --ink:#EDEEEA; --muted:#9AA1A8; --line:#2A2E33;
+  --tarmac:#3A4047; --tarmac-2:#2A2F34; --verge:#1A221C; --lane:#C9CCC6; --marking:#F5C518; --on-marking:#1B1700;
+  --go:#3BB46D; --stop:#E8594E; --amber:#F0A92A; --toucan:#3FBF6E; --voi:#F06C80; color-scheme:dark}
 html,body{background:var(--bg);color:var(--ink);overscroll-behavior-y:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-body{font-family:var(--body);font-variant-numeric:tabular-nums;font-size:16px;line-height:1.45;padding-inline:16px;padding-block:0 40px}
-#app{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-button{font:inherit;color:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;cursor:pointer}
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--marking);outline-offset:2px}
-h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
-h1{font-size:28px;font-weight:800;letter-spacing:-.01em}
-h2{font-size:21px;font-weight:800}
-h3{font-size:16px;font-weight:800}
+body{font-family:var(--font);font-variant-numeric:tabular-nums;font-size:17px;line-height:1.45;padding-inline:16px;padding-block:0 48px}
+#app{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+button{font:inherit;color:inherit;touch-action:manipulation;-webkit-user-select:none;user-select:none;cursor:pointer;border:0}
+button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--marking);outline-offset:2px}
+h1,h2,h3{line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:30px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:20px;font-weight:750}
+h3{font-size:17px;font-weight:700}
 p{margin:0}
 .muted{color:var(--muted)}
-.small{font-size:13px}
-.eyebrow{font-family:var(--display);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.card{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
-.stack{display:flex;flex-direction:column;gap:8px}
+.small{font-size:14px}
+.eyebrow{font-size:13px;font-weight:650;color:var(--muted)}
+.card{background:var(--surface);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.btn{min-height:52px;padding:10px 16px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-weight:700}
-.btn:active,.pick:active,.chip:active,.cls:active,.cxb:active,.head:active,.qbtn:active,.stn:active{transform:scale(.97)}
-.btn,.pick,.chip,.cls,.cxb,.head,.qbtn,.stn{transition:transform .08s,background-color .15s,border-color .15s}
-.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.btn.warn{border-color:var(--stop);color:var(--stop)}
+.btn{min-height:54px;padding:10px 18px;border-radius:var(--r-s);background:var(--tile);font-weight:650}
+.btn.primary{background:var(--ink);color:var(--bg)}
+.btn.warn{color:var(--stop)}
 .btn.block{width:100%}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.chip{min-height:44px;padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-weight:600;font-size:15px}
-.chip.on,.pick.on{background:var(--marking);color:var(--on-marking);border-color:var(--marking)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.chip{min-height:46px;padding:8px 16px;border-radius:999px;background:var(--tile);font-weight:600;font-size:16px}
+.chip:disabled{opacity:.35}
+.chip.on,.pick.on{background:var(--marking);color:var(--on-marking)}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pick{min-height:52px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-weight:700}
-.top-band{height:8px;margin-inline:-16px;background:repeating-linear-gradient(-45deg,var(--marking) 0 14px,var(--ink) 14px 28px)}
-.brand{display:flex;flex-direction:column;gap:4px;padding-top:16px}
-.brand .sub{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.02em}
-ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
-.saved{background:color-mix(in srgb,var(--go) 14%,var(--surface));border:1.5px solid var(--go);border-radius:var(--r);padding:10px 12px;font-weight:700;font-size:14px}
-.linkbtn{background:none;border:0;color:var(--stop);font-weight:700;font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:12px;align-self:center;min-height:44px}
-.discard{border-color:var(--stop)}
-.warnbar{background:var(--stop);color:#fff;border-radius:var(--r);padding:10px 14px;font-weight:600;font-size:14px}
+.pick{min-height:54px;border-radius:var(--r-s);background:var(--tile);font-weight:650}
+.btn,.pick,.chip,.cls,.cxb,.head,.qbtn,.stn,.tool{transition:transform .08s,background-color .15s}
+.btn:active,.pick:active,.chip:active,.cls:active,.cxb:active,.head:active,.qbtn:active,.stn:active,.tool:active{transform:scale(.97)}
+.brand{display:flex;flex-direction:column;gap:6px;padding-top:28px;padding-bottom:4px}
+.saved{background:color-mix(in srgb,var(--go) 14%,var(--surface));color:var(--ink);border-radius:var(--r-s);padding:12px 14px;font-weight:650;font-size:15px}
+.linkbtn{background:none;color:var(--stop);font-weight:600;font-size:15px;text-decoration:underline;text-underline-offset:3px;padding:12px;align-self:center;min-height:44px}
+.warnbar{background:var(--stop);color:#fff;border-radius:var(--r-s);padding:10px 14px;font-weight:600;font-size:15px;margin-top:12px}
+
+/* setup steps */
+.step{display:flex;flex-direction:column;gap:12px}
+.step h2{display:flex;align-items:center;gap:10px}
+.step h2 .num{width:26px;height:26px;border-radius:50%;background:var(--tile);font-size:14px;display:grid;place-items:center;flex:none}
+.step.done h2 .num{background:var(--marking);color:var(--on-marking)}
+.timein{display:flex;gap:8px;align-items:center}
+input[type=time]{font:inherit;font-size:28px;font-weight:700;padding:8px 14px;border-radius:var(--r-s);border:0;background:var(--tile);color:var(--ink);min-height:56px;flex:1;min-width:0}
+.hint{font-size:14px;color:var(--muted)}
 
 /* map */
-.map{width:100%;max-width:420px;height:auto;display:block;margin:0 auto;border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line)}
-.map text{font-family:var(--display);font-weight:800}
+.map{width:100%;max-width:420px;height:auto;display:block;margin:0 auto;border-radius:var(--r)}
+.map text{font-family:var(--font);font-weight:700}
 .pin{cursor:pointer}
-.pin circle{fill:var(--surface);stroke:var(--ink);stroke-width:2.5}
+.pin circle{fill:var(--surface);stroke:var(--ink);stroke-width:2}
 .pin text{fill:var(--ink);font-size:17px}
 .pin.on circle{fill:var(--marking);stroke:var(--on-marking)}
 .pin.on text{fill:var(--on-marking)}
+.mini .pin{cursor:default}
+.mini .pin:not(.on){opacity:.35}
 .cx-hit{cursor:pointer}
-.cx-hit:active .cx-band{opacity:.6}
 
-.stn-list{display:flex;flex-direction:column;gap:8px}
-.stn{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center;text-align:left;padding:12px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface)}
-.stn .lt{width:44px;height:44px;border-radius:50%;border:2.5px solid var(--ink);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:20px}
-.stn.on .lt{background:var(--marking);border-color:var(--on-marking);color:var(--on-marking)}
-.stn .t{font-weight:800;font-family:var(--display)}
-.stn .d{font-size:13px;color:var(--muted)}
-.stn{box-shadow:var(--shadow)}
-.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);margin-right:6px;vertical-align:1px}
+/* station list (grouped rows) */
+.list{background:var(--surface);border-radius:var(--r);overflow:hidden}
+.stn{display:grid;grid-template-columns:42px 1fr auto;gap:14px;align-items:center;text-align:left;padding:12px 16px;width:100%;background:var(--surface)}
+.stn+.stn{border-top:1px solid var(--line)}
+.stn .lt{width:42px;height:42px;border-radius:50%;background:var(--tile);display:grid;place-items:center;font-weight:800;font-size:18px}
+.stn.on .lt{background:var(--marking);color:var(--on-marking)}
+.stn .t{font-weight:650;display:block}
+.stn .d{font-size:14px;color:var(--muted)}
+.stn .chev{color:var(--muted);font-size:20px}
+ul.plain{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
 
-/* briefing sheet */
-.sheet-wrap{position:fixed;inset:0;background:rgb(0 0 0 / .45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
-.sheet{background:var(--surface);color:var(--ink);width:100%;max-width:560px;max-height:88%;overflow:auto;border-radius:16px 16px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
-.brief dt{font-family:var(--display);font-weight:800;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:4px}
-.brief dd{margin:2px 0 0}
-.brief{margin:0;display:flex;flex-direction:column;gap:6px}
-.brief ul{margin:4px 0 0;padding-left:18px}
+/* instructions sheet */
+.sheet-wrap{position:fixed;inset:0;background:rgb(0 0 0 / .4);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--surface);color:var(--ink);width:100%;max-width:560px;max-height:90%;overflow:auto;border-radius:20px 20px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:var(--tile-2);align-self:center}
+.sheet .map{max-width:200px}
+ol.three{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+ol.three li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;counter-increment:s}
+ol.three li::before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--marking);color:var(--on-marking);font-weight:800;font-size:14px;display:grid;place-items:center}
+details{background:var(--tile);border-radius:var(--r-s);padding:4px 14px}
+details summary{min-height:44px;display:flex;align-items:center;font-weight:650;cursor:pointer}
+details[open]{padding-bottom:14px}
+.brief{margin:0;display:flex;flex-direction:column;gap:4px;font-size:15px}
+.brief dt{font-weight:700;margin-top:8px}
+.brief dd{margin:0}
+.brief ul{margin:2px 0 0;padding-left:18px}
 
 /* counting bar */
-.bar{box-shadow:0 6px 12px -10px rgb(0 0 0 / .25);position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);margin-inline:-16px;padding:10px 16px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center}
-.bar .prog{position:absolute;left:0;right:0;bottom:-1px;height:3px;background:transparent}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);margin-inline:-16px;padding:12px 16px 10px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:auto 1fr auto;gap:10px 12px;align-items:center}
+.bar .prog{position:absolute;left:0;right:0;bottom:-1px;height:3px}
 .bar .prog i{display:block;height:100%;width:0;background:var(--marking);transition:width .9s linear}
 .bar .tools{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.bar .tools button{min-height:40px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:14px}
-.bar .tools .help{border-color:var(--ink)}
-.bar .stl{width:42px;height:42px;border-radius:50%;background:var(--marking);color:var(--on-marking);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:20px;border:0}
+.tool{min-height:42px;border-radius:var(--r-s);background:var(--tile);font-weight:600;font-size:15px}
+.bar .stl{width:44px;height:44px;border-radius:50%;background:var(--marking);color:var(--on-marking);display:grid;place-items:center;font-weight:800;font-size:20px}
 .bar .ttl{min-width:0}
-.bar .ttl b{display:block;font-family:var(--display);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bar .ttl span{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .ttl b{display:block;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .ttl span{display:block;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .ttl span.pre{color:var(--amber)}
+.bar .ttl span.over{color:var(--stop)}
 .total{display:flex;align-items:center;gap:10px}
-.total .n{font-family:var(--mono);font-weight:700;font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
-.total .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;text-align:right}
-.undo{min-height:44px;padding:6px 12px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:14px}
+.total .n{font-weight:750;font-size:30px;line-height:1;display:block;text-align:right}
+.total .lbl{font-size:12px;color:var(--muted);display:block;text-align:right}
+.undo{min-height:44px;padding:6px 14px;border-radius:var(--r-s);background:var(--tile);font-weight:650;font-size:15px}
+.status{border-radius:var(--r-s);padding:12px 14px;font-size:15px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.status.pre{background:color-mix(in srgb,var(--amber) 16%,var(--surface))}
+.status.over{background:color-mix(in srgb,var(--stop) 14%,var(--surface))}
+.status .btn{min-height:44px;padding:6px 14px;background:var(--surface);font-size:15px;flex:none}
+.last{font-size:14px;color:var(--muted);min-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.last b{color:var(--ink);font-weight:600}
 
 .classes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.cls svg{width:34px;height:20px;flex:none;margin-bottom:2px}
-.cls{min-height:76px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;text-align:center}
-.cls .cl{font-weight:800;font-size:14px;line-height:1.1}
-.cls .ch{font-size:11px;color:var(--muted);line-height:1.15}
-.cls.on{background:var(--marking);border-color:var(--marking);color:var(--on-marking)}
-.cls.on .ch{color:var(--on-marking)}
-.cls.voi .cl,.cls.voi svg{color:var(--voi)}
-.cls.voi.on .cl,.cls.voi.on svg{color:var(--on-marking)}
-.last{font-size:13px;color:var(--muted);margin-top:-8px;min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.last b{color:var(--ink)}
-.next{font-size:14px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.next b{font-family:var(--display)}
-.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px;border-radius:14px;background:var(--tarmac);transition:box-shadow .15s}
+.cls{min-height:74px;border-radius:var(--r-s);background:var(--tile);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;text-align:center}
+.cls svg{width:42px;height:24px;flex:none}
+.cls .cl{font-weight:650;font-size:13.5px;line-height:1.1}
+.cls.on{background:var(--marking);color:var(--on-marking)}
+.cls.voi svg,.cls.voi .cl{color:var(--voi)}
+.cls.voi.on svg,.cls.voi.on .cl{color:var(--on-marking)}
+.next{font-size:15px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.next b{font-weight:700}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px;border-radius:var(--r);background:var(--tarmac);transition:box-shadow .15s}
 .pad.armed{box-shadow:0 0 0 4px var(--marking)}
-.mv:active{background:color-mix(in srgb,var(--marking) 30%,var(--tarmac))}
-.mv{min-height:168px;border-radius:var(--r);border:0;background:color-mix(in srgb,var(--tarmac) 70%,#000);color:var(--lane);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;text-align:center}
+.mv{min-height:176px;border-radius:var(--r-s);background:var(--tarmac-2);color:var(--lane);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;text-align:center}
+.mv:active{background:color-mix(in srgb,var(--marking) 30%,var(--tarmac-2))}
 .mv svg{width:52px;height:64px}
-.mv .mvl{font-family:var(--display);font-weight:800;font-size:16px}
-.mv .mvd{font-size:12px;opacity:.85;line-height:1.2}
-.mv .mvn{font-family:var(--mono);font-weight:700;font-size:20px;color:var(--marking)}
+.mv .mvl{font-weight:750;font-size:17px}
+.mv .mvd{font-size:13px;opacity:.8;line-height:1.2}
+.mv .mvn{font-weight:750;font-size:22px;color:var(--marking)}
 .hit{animation:hit .22s ease-out}
-@keyframes hit{0%{transform:scale(.94);filter:brightness(1.5)}100%{transform:scale(1);filter:none}}
-@media (prefers-reduced-motion:reduce){.hit{animation:none}}
+@keyframes hit{0%{transform:scale(.94);filter:brightness(1.4)}100%{transform:scale(1);filter:none}}
+@media (prefers-reduced-motion:reduce){.hit{animation:none}.bar .prog i{transition:none}}
 
-.qrow{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:center}
-.qrow output{font-family:var(--mono);font-size:30px;font-weight:700;text-align:center}
-.qbtn{min-height:52px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-size:26px;font-weight:700}
+.qrow{display:grid;grid-template-columns:60px 1fr 60px;gap:8px;align-items:center}
+.qrow output{font-size:32px;font-weight:750;text-align:center}
+.qbtn{min-height:56px;border-radius:var(--r-s);background:var(--tile);font-size:28px;font-weight:600}
 
 .heads{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.head{min-height:112px;box-shadow:var(--shadow);border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px;text-align:left}
-.head .hn{font-family:var(--display);font-weight:800;font-size:15px}
-.head{position:relative;padding-right:52px}
-.sig3{position:absolute;right:10px;top:10px;width:30px;padding:5px 0;border-radius:8px;background:#121417;border:1.5px solid #4A5057;display:flex;flex-direction:column;align-items:center;gap:4px}
+.head{position:relative;min-height:112px;border-radius:var(--r-s);background:var(--surface);display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:14px 54px 14px 14px;text-align:left}
+.head .hn{font-weight:700;font-size:16px}
+.head .hs{font-size:14px;font-weight:600}
+.head .hx{font-size:13px;color:var(--muted)}
+.head.g{background:color-mix(in srgb,var(--go) 12%,var(--surface))}
+.head.full{grid-column:1/-1;min-height:84px;padding-right:116px}
+.sig3{position:absolute;right:12px;top:12px;width:30px;padding:5px 0;border-radius:8px;background:#121417;display:flex;flex-direction:column;align-items:center;gap:4px}
 .sig3 i{width:18px;height:18px;border-radius:50%;background:#3A3F45}
 .head.r .sig3 i:nth-child(1){background:#E5463B;box-shadow:0 0 8px #E5463B}
 .head.g .sig3 i:nth-child(3){background:#2ECC71;box-shadow:0 0 8px #2ECC71}
-.head.g{border-color:var(--go);background:color-mix(in srgb,var(--go) 9%,var(--surface))}
-.head.full .sig3{flex-direction:row;width:auto;padding:0 5px;height:30px;top:50%;transform:translateY(-50%)}
-.head.full{padding-right:110px}
-.head .hs{font-size:13px;font-weight:700}
-.head .hx{font-family:var(--mono);font-size:12px;color:var(--muted)}
-.head.full{grid-column:1/-1;min-height:84px}
+.head.full .sig3{flex-direction:row;width:auto;padding:0 6px;height:30px;top:50%;transform:translateY(-50%)}
 
 .timers{display:flex;flex-direction:column;gap:8px}
-.timer{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:stretch}
-.timer .go{min-height:56px;border-radius:var(--r);border:2px solid var(--amber);background:color-mix(in srgb,var(--amber) 14%,var(--surface));text-align:left;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.timer .go b{font-family:var(--mono);font-size:22px}
-.timer .x{min-width:52px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);font-size:13px;font-weight:700}
+.timer{display:grid;grid-template-columns:1fr auto;gap:8px}
+.timer .go{min-height:58px;border-radius:var(--r-s);background:color-mix(in srgb,var(--amber) 18%,var(--surface));text-align:left;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.timer .go b{font-size:22px}
+.timer .x{min-width:64px;border-radius:var(--r-s);background:var(--tile);font-size:14px;font-weight:600}
 
 .cxbtns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.cxb{min-height:72px;border-radius:var(--r);border:1.5px solid var(--line);background:var(--surface);display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;text-align:left}
-.cxb .n{font-family:var(--mono);font-size:24px;font-weight:700}
+.cxb{min-height:74px;border-radius:var(--r-s);background:var(--surface);display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;text-align:left;font-weight:600}
+.cxb .n{font-size:26px;font-weight:750}
 .cxb.full{grid-column:1/-1}
-.cxb.toucan{border-color:var(--toucan)}
+.cxb.toucan{box-shadow:inset 4px 0 0 var(--toucan)}
 
-.foot{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.foot .btn{min-height:48px;font-size:14px;padding:8px}
-textarea,input[type=text]{width:100%;box-sizing:border-box;font:inherit;border:1.5px solid var(--line);border-radius:var(--r);padding:10px;background:var(--surface);color:var(--ink)}
-#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:30;max-width:calc(100% - 32px);text-align:center}
-table.sum{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
-table.sum td,table.sum th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
-table.sum td:last-child,table.sum th:last-child{text-align:right;font-family:var(--mono)}
+textarea{width:100%;box-sizing:border-box;font:inherit;border:0;border-radius:var(--r-s);padding:12px;background:var(--tile);color:var(--ink)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;font-size:15px;z-index:30;max-width:calc(100% - 32px);text-align:center}
+#ivsum{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:528px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:var(--r);padding:14px 16px;z-index:25;text-align:left;display:flex;flex-direction:column;gap:4px;font-size:15px;box-shadow:0 8px 24px rgb(0 0 0 / .25)}
+#ivsum b{font-size:16px}
+#ivsum .x{opacity:.7;font-size:13px}
+table.sum{width:100%;border-collapse:collapse;font-size:15px}
+table.sum td{padding:8px 2px;border-bottom:1px solid var(--line)}
+table.sum tr:last-child td{border-bottom:0}
+table.sum td:last-child{text-align:right;font-weight:650}
 </style>
 
-<div class="top-band" aria-hidden="true"></div>
 <main id="app"></main>
+<button id="ivsum" type="button" data-act="hidesum" hidden></button>
 <div id="toast" role="status" hidden></div>
 
 <script src="xlsx.full.min.js"></script>
@@ -186,6 +205,8 @@ table.sum td:last-child,table.sum th:last-child{text-align:right;font-family:var
 /* ---------- junction model ---------- */
 const NAMES=['Harry O','Murray','Harry J','Ciaran','Joseph','Ollie'];
 const WEATHER=['Dry, bright','Dry, overcast','Light rain','Heavy rain','Windy','Low light'];
+const DURS=[15,30,45,60,90,120];
+const IVS=[5,10,15,30,45,60];
 const APP={
   N:{road:'Mayfield Rd (north)',compass:'North',L:'Esslemont Rd',A:'Mayfield Rd (south)',R:'West Mains Rd'},
   E:{road:'Esslemont Rd',compass:'East',L:'Mayfield Rd (south)',A:'West Mains Rd',R:'Mayfield Rd (north)'},
@@ -194,65 +215,67 @@ const APP={
 };
 const APPS=['N','E','S','W'];
 const MV={L:'Left',A:'Straight on',R:'Right'};
+const MVS={L:'L',A:'S',R:'R'};
 const MVX={L:'Left',A:'Through',R:'Right'};
 const CLASSES=[
-  {k:'car',label:'Car / Taxi',hint:'incl. private hire',pcu:1,x:'Car/Taxi'},
-  {k:'lgv',label:'Van / LGV',hint:'vans, pick-ups',pcu:1,x:'LGV/Van'},
-  {k:'hgvr',label:'HGV rigid',hint:'one-piece lorry',pcu:2.3,x:'HGV Rigid'},
-  {k:'hgva',label:'HGV artic',hint:'cab + trailer',pcu:2.8,x:'HGV Artic'},
-  {k:'bus',label:'Bus / Coach',hint:'service or coach',pcu:2,x:'Bus/Coach'},
-  {k:'mc',label:'Motorbike',hint:'incl. mopeds',pcu:0.5,x:'Motorcycle'},
-  {k:'cyc',label:'Cycle',hint:'own bike',pcu:0.2,x:'Pedal Cycle'},
-  {k:'voi',label:'Voi e-bike',hint:'shared, Voi',pcu:0.2,x:'Voi e-bike'}
+  {k:'car',label:'Car / Taxi',hint:'cars, taxis and private hire',pcu:1,x:'Car/Taxi'},
+  {k:'lgv',label:'Van',hint:'vans and pick-ups',pcu:1,x:'LGV/Van'},
+  {k:'hgvr',label:'Lorry',hint:'rigid HGV, one-piece lorry (bin lorries too)',pcu:2.3,x:'HGV Rigid'},
+  {k:'hgva',label:'Artic',hint:'articulated HGV, cab plus trailer',pcu:2.8,x:'HGV Artic'},
+  {k:'bus',label:'Bus',hint:'service buses and coaches',pcu:2,x:'Bus/Coach'},
+  {k:'mc',label:'Motorbike',hint:'motorbikes and mopeds',pcu:0.5,x:'Motorcycle'},
+  {k:'cyc',label:'Cycle',hint:'private bikes, including private e-bikes',pcu:0.2,x:'Pedal Cycle'},
+  {k:'voi',label:'Voi',hint:'shared Voi e-bikes',pcu:0.2,x:'Voi e-bike'}
 ];
 const CLS=Object.fromEntries(CLASSES.map(c=>[c.k,c]));
 const CROSS={N:'Mayfield Rd (north)',E:'Esslemont Rd',S:'Mayfield Rd (south)',W:'West Mains Rd (toucan)',D:'Diagonal toucan'};
 const CXS=['N','E','S','W','D'];
 const HEADS={N:'Mayfield Rd (north)',E:'Esslemont Rd',S:'Mayfield Rd (south)',W:'West Mains Rd',P:'Green man (pedestrian stage)'};
 const CORNER={
-  NE:'North-east corner, between Mayfield Rd (north) and Esslemont Rd',
-  SE:'South-east corner, between Esslemont Rd and Mayfield Rd (south)',
-  SW:"South-west corner, King's Buildings side (University grounds)",
-  NW:'North-west corner, between West Mains Rd and Mayfield Rd (north)'
+  NE:'north-east corner (Mayfield Rd north / Esslemont Rd)',
+  SE:'south-east corner (Esslemont Rd / Mayfield Rd south)',
+  SW:"south-west corner (King's Buildings side)",
+  NW:'north-west corner (West Mains Rd / Mayfield Rd north)'
 };
 const STN={
-  A:{bar:'Mayfield Rd (N)',role:'veh',app:'N',corner:'NE',title:'Mayfield Rd (north) traffic',short:'Southbound traffic from Mayfield Rd (north)'},
-  B:{bar:'Esslemont Rd',role:'veh',app:'E',corner:'SE',title:'Esslemont Rd traffic',short:'Westbound traffic from Esslemont Rd'},
-  C:{bar:'Mayfield Rd (S)',role:'veh',app:'S',corner:'SW',title:'Mayfield Rd (south) traffic',short:'Northbound traffic from Mayfield Rd (south)'},
-  D:{bar:'West Mains Rd',role:'veh',app:'W',corner:'NW',title:'West Mains Rd traffic',short:'Eastbound traffic from West Mains Rd'},
-  E:{bar:'Pedestrians',role:'ped',corner:'SW',title:'Pedestrians and crossings',short:'People using all five crossings, plus wait times'},
-  F:{bar:'Signals and buses',role:'sig',corner:'NW',title:'Signals and buses',short:'Green and amber times, cycle length, bus delay'}
+  A:{bar:'Mayfield Rd (N)',role:'veh',app:'N',corner:'NE',title:'Mayfield Rd (north) traffic'},
+  B:{bar:'Esslemont Rd',role:'veh',app:'E',corner:'SE',title:'Esslemont Rd traffic'},
+  C:{bar:'Mayfield Rd (S)',role:'veh',app:'S',corner:'SW',title:'Mayfield Rd (south) traffic'},
+  D:{bar:'West Mains Rd',role:'veh',app:'W',corner:'NW',title:'West Mains Rd traffic'},
+  E:{bar:'Pedestrians',role:'ped',corner:'SW',title:'Pedestrians and crossings'},
+  F:{bar:'Signals and buses',role:'sig',corner:'NW',title:'Signals and buses'}
 };
+const ROLE={veh:'Vehicles',ped:'Pedestrians',sig:'Signals'};
 const VEHST={N:'A',E:'B',S:'C',W:'D'};
 const PIN={A:[244,116],B:[244,244],C:[116,244],D:[116,116],E:[74,280],F:[74,80]};
 
-const BRIEF={
- veh:(st)=>{const a=APP[STN[st].app];return `
-  <dl class="brief">
-   <dt>Where to stand</dt><dd>${CORNER[STN[st].corner]}. Stay at least 1 m back from the kerb, where you can see the ${a.road} stop line.</dd>
-   <dt>What you count</dt><dd>Every vehicle and bike coming from <b>${a.road}</b>, at the moment it crosses the stop line, and where it goes:
-    <ul><li>Left to ${a.L}</li><li>Straight on to ${a.A}</li><li>Right to ${a.R}</li></ul></dd>
-   <dt>How to tap</dt><dd><b>Car is pre-selected</b>, so for a car just tap the arrow. For anything else, tap the vehicle type first, then the arrow. It goes back to Car after each entry. Bikes in the cycle box count too. Voi bikes get their own button.</dd>
-   <dt>Queue at end of red</dt><dd>When your light turns green, count how many vehicles were waiting and log it. Do it every cycle you can. Missing some cycles is fine.</dd>
-   <dt>Why it matters</dt><dd>Turning counts by vehicle type give the flow for each movement in PCU/h. That feeds capacity, degree of saturation and delay. Queues are direct evidence of congestion.</dd>
-   <dt>Tips</dt><dd><ul><li>Count at the stop line, not when they join the queue.</li><li>Unsure about a vehicle type? Go with your best guess and keep going.</li><li>Wrong tap? Use Undo straight away.</li></ul></dd>
-  </dl>`},
- ped:()=>`
-  <dl class="brief">
-   <dt>Where to stand</dt><dd>${CORNER.SW}. You can see all five crossings from here, including the diagonal toucan.</dd>
-   <dt>What you count</dt><dd>Every person who uses each crossing, when they step onto it. Count groups one person at a time. Cyclists riding over a toucan crossing: tap <b>Cyclist</b> or <b>Voi</b> first, then the crossing.</dd>
-   <dt>Wait times</dt><dd>When you have a spare moment, pick one person who reaches the kerb while the green man is off. Tap <b>Start</b> for their crossing, then tap their timer when they step off. Only time people who actually wait. Aim for about 10 per crossing per session.</dd>
-   <dt>Why it matters</dt><dd>Demand by crossing shows whether the crossings match where people want to walk. Wait time is the pedestrian delay KPI. The 2025 data showed about 818 pedestrians an hour, so this matters to the Council.</dd>
-   <dt>Tips</dt><dd><ul><li>People crossing away from a crossing: add a note with the location. It is evidence of desire lines.</li><li>Undo removes your last tap.</li></ul></dd>
-  </dl>`,
- sig:()=>`
-  <dl class="brief">
-   <dt>Where to stand</dt><dd>${CORNER.NW}. Pick a spot where you can see the signals for all four approaches.</dd>
-   <dt>Signals</dt><dd>Each box is one approach's main signal. Tap it the moment that signal turns <b>green</b>, and again the moment it turns <b>amber</b>. For the green man, tap when it comes on and when it goes off. The app works out green times and cycle length for you.</dd>
-   <dt>Buses</dt><dd>When a bus stops at a red light, tap its approach. A timer starts. Tap the timer when the bus crosses the stop line. Buses that don't stop are counted by stations A to D, so ignore them here.</dd>
-   <dt>Why it matters</dt><dd>Capacity is c = s × lanes × g/C, so you need the green time g and cycle length C. Bus delay shows how the signals affect buses.</dd>
-   <dt>Tips</dt><dd><ul><li>If a right-turn filter arrow appears or a stage gets skipped, add a note.</li><li>Get 10 to 15 full cycles if you can. It is better to catch every change for a few cycles than to half-catch many.</li></ul></dd>
-  </dl>`
+/* ---------- instructions: three steps, details hidden ---------- */
+const STEPS={
+ veh:st=>{const a=APP[STN[st].app];return [
+   `Stand on the <b>${CORNER[STN[st].corner]}</b>, 1 m back from the kerb, facing the ${a.road} stop line.`,
+   `As each vehicle crosses the stop line, tap the arrow for where it goes. <b>Car is pre-selected</b>; for anything else, tap the vehicle first.`,
+   `When your light turns green, count the queue that was waiting and tap <b>Log queue</b>.`]},
+ ped:()=>[
+   `Stand on the <b>${CORNER.SW}</b>. You can see all five crossings from there.`,
+   `Tap a crossing each time someone steps onto it. For bikes, tap <b>Cyclist</b> or <b>Voi</b> first.`,
+   `When you're free, time someone waiting: <b>Start</b> when they reach the kerb, tap their timer when they step off.`],
+ sig:()=>[
+   `Stand on the <b>${CORNER.NW}</b>, where you can see every signal.`,
+   `Tap a signal when it turns <b>green</b>, and again when it turns <b>amber</b>.`,
+   `When a bus stops at a red light, tap its road. Tap the timer when it moves off.`]
+};
+const MORE={
+ veh:st=>{const a=APP[STN[st].app];return `<dl class="brief">
+   <dt>Directions from ${a.road}</dt><dd><ul><li>Left to ${a.L}</li><li>Straight on to ${a.A}</li><li>Right to ${a.R}</li></ul></dd>
+   <dt>Vehicle types</dt><dd><ul>${CLASSES.map(c=>`<li><b>${c.label}</b>: ${c.hint}</li>`).join('')}</ul></dd>
+   <dt>Tips</dt><dd><ul><li>Count at the stop line, not when they join the queue.</li><li>Unsure of a type? Best guess and keep going.</li><li>Wrong tap? Undo straight away.</li><li>Missing some queue counts is fine.</li></ul></dd>
+   <dt>Why it matters</dt><dd>Turning counts give the flow for each movement in PCU/h, which feeds capacity and degree of saturation. Queues are direct evidence of congestion.</dd></dl>`},
+ ped:()=>`<dl class="brief">
+   <dt>Tips</dt><dd><ul><li>Count groups one person at a time.</li><li>Only time people who actually wait. About 10 per crossing is plenty.</li><li>People crossing away from a crossing: add a note with where. It shows desire lines.</li></ul></dd>
+   <dt>Why it matters</dt><dd>Demand by crossing shows whether the crossings match where people walk. Wait time is the pedestrian delay KPI.</dd></dl>`,
+ sig:()=>`<dl class="brief">
+   <dt>Tips</dt><dd><ul><li>For the green man, tap when it comes on and when it goes off.</li><li>Buses that don't stop are counted by stations A to D, so ignore them here.</li><li>Filter arrow or skipped stage? Add a note.</li><li>Catching every change for 10 to 15 cycles beats half-catching many.</li></ul></dd>
+   <dt>Why it matters</dt><dd>Capacity is c = s × lanes × g/C, so you need green time g and cycle length C. Bus delay shows how the signals affect buses.</dd></dl>`
 };
 
 /* ---------- state ---------- */
@@ -265,8 +288,9 @@ let S=load()||fresh();
 try{localStorage.setItem(KEY+'.t','1');localStorage.removeItem(KEY+'.t')}catch(e){storageOK=false}
 const LAST=KEY+'.last';
 function lastPick(){try{return JSON.parse(localStorage.getItem(LAST))||{}}catch(e){return {}}}
-let draft={obs:S.session?.obs||lastPick().obs||null,wx:null};
-let brief=null; let confirmNew=false; let savedAt=null; let confirmDiscard=false;
+function newDraft(){const l=lastPick();return {obs:l.obs||null,wx:null,time:'',dur:l.dur||60,iv:l.iv||15}}
+let draft=newDraft();
+let brief=null, confirmNew=false, savedAt=null, confirmDiscard=false;
 
 const $=s=>document.querySelector(s);
 const pad=n=>String(n).padStart(2,'0');
@@ -275,21 +299,73 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const fD=t=>{const d=new Date(t);return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()};
 const fT=(t,sec)=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())+(sec?':'+pad(d.getSeconds()):'')};
 const fISO=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
-const Q=900000;
-const qf=t=>{const d=new Date(t);d.setSeconds(0,0);d.setMinutes(Math.floor(d.getMinutes()/15)*15);return d.getTime()};
-const mmss=ms=>{const s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+':'+pad(s%60)};
+const mmss=ms=>{const s=Math.max(0,Math.round(ms/1000));const h=Math.floor(s/3600),m=Math.floor(s/60)%60;return (h?h+':'+pad(m):m)+':'+pad(s%60)};
 const r1=x=>Math.round(x*10)/10;
+const MIN=60000;
+
+/* ---------- session plan (shared start time, duration, interval) ---------- */
+function timeToday(hhmm){const [h,m]=hhmm.split(':').map(Number);const d=new Date();d.setHours(h,m,0,0);return d.getTime()}
+function nextFive(){const d=new Date(Date.now()+5*MIN);d.setSeconds(0,0);d.setMinutes(Math.ceil(d.getMinutes()/5)*5);return pad(d.getHours())+':'+pad(d.getMinutes())}
+function planEnd(p){return p.t0+p.dur*MIN}
+function nIv(p){return Math.ceil(p.dur/p.iv)}
+function binStart(t,p){const L=p.iv*MIN;return p.t0+Math.floor((t-p.t0)/L)*L}
+function binEnd(a,p){const e=planEnd(p);const b=a+p.iv*MIN;return (a<e&&b>e)?e:b}
+function binLabel(a,p){const i=Math.floor((a-p.t0)/(p.iv*MIN));return (a>=p.t0&&a<planEnd(p))?String(i+1):(a<p.t0?'Before start':'After end')}
+function windowTag(t,p){return t<p.t0?'Before start':t>=planEnd(p)?'After end':'Yes'}
+function planState(now){const p=S.session;if(!p||!p.t0)return null;now=now||Date.now();const end=planEnd(p);
+  if(now<p.t0)return {code:'pre',left:p.t0-now};
+  if(now>=end)return {code:'end',end};
+  const a=binStart(now,p),b=binEnd(a,p),i=Math.round((a-p.t0)/(p.iv*MIN));
+  return {code:i,i,a,b,n:nIv(p),left:b-now,frac:(now-a)/(b-a)}}
 
 function log(k,f){const e=Object.assign({id:uid(),t:Date.now(),k,st:S.station,obs:S.session.obs,wx:S.session.wx,ses:S.session.id},f||{});S.events.push(e);save();return e}
 function sesEv(){return S.events.filter(e=>e.ses===S.session?.id)}
 const TAPK={veh:['veh'],ped:['ped'],sig:['sig']};
 function stationTotal(st){const ks=TAPK[STN[st].role];return sesEv().filter(e=>e.st===st&&ks.includes(e.k)).length}
+function entryCount(){return sesEv().filter(e=>!['on','off'].includes(e.k)).length}
 function lastEntry(){const ev=S.events;for(let i=ev.length-1;i>=0;i--){const e=ev[i];if(e.ses===S.session?.id&&e.st===S.station&&!['on','off','note'].includes(e.k))return e}return null}
 function sigState(h){const ev=sesEv().filter(e=>e.k==='sig'&&e.h===h);return ev.length?ev[ev.length-1]:null}
 
 function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,1600)}
-function buzz(){try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}}
+function buzz(p){try{navigator.vibrate&&navigator.vibrate(p||12)}catch(e){}}
 function flash(el){if(!el)return;el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit')}
+
+/* ---------- alerts ---------- */
+let actx=null;
+function unlockAudio(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume()}catch(e){}}
+function beep(n,len,freq){if(!actx)return;try{for(let i=0;i<n;i++){const t=actx.currentTime+i*(len+0.12);const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=freq||880;o.type='sine';
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+len);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+len+0.05)}}catch(e){}}
+function alertStart(){beep(2,0.18,988);buzz([200,100,200]);toast('Counting has started')}
+function alertInterval(){beep(1,0.25,880);buzz(300)}
+function alertEnd(){beep(3,0.35,740);buzz([400,150,400,150,400]);toast("Time's up")}
+function showSummary(i){
+  if(S.screen!=='count'||!S.station)return;const p=S.session,L=p.iv*MIN,a=p.t0+i*L,b=binEnd(a,p),st=STN[S.station];
+  const ev=sesEv().filter(e=>e.st===S.station&&e.t>=a&&e.t<b);let line='';
+  if(st.role==='veh'){const v=ev.filter(e=>e.k==='veh');line=`${v.length} vehicles · ${['L','A','R'].map(m=>MVS[m]+' '+v.filter(e=>e.m===m).length).join(' · ')}`;const q=ev.filter(e=>e.k==='queue').length;if(q)line+=` · ${q} queues`}
+  else if(st.role==='ped'){const v=ev.filter(e=>e.k==='ped');line=`${v.length} people · `+CXS.map(k=>(k==='D'?'Diag':k)+' '+v.filter(e=>e.cx===k).length).join(' · ')}
+  else{line=`${ev.filter(e=>e.k==='sig').length} signal changes · ${ev.filter(e=>e.k==='bus').length} buses timed`}
+  const box=$('#ivsum');box.innerHTML=`<b>Interval ${i+1} done · ${fT(a)}–${fT(b)}</b><span>${line}</span><span class="x">Tap to close</span>`;box.hidden=false;
+  clearTimeout(showSummary._t);showSummary._t=setTimeout(()=>box.hidden=true,10000)}
+
+let prevCode=null;
+function tick(){
+  const ps=planState();if(!ps){prevCode=null;return}
+  if(prevCode!==null&&ps.code!==prevCode){
+    if(prevCode==='pre'){ps.code==='end'?alertEnd():alertStart()}
+    else if(typeof prevCode==='number'){showSummary(prevCode);ps.code==='end'?alertEnd():alertInterval();if(S.screen==='count')renderStatus()}
+  }
+  if(prevCode==='pre'&&ps.code!=='pre'&&S.screen==='count')renderStatus();
+  prevCode=ps.code;
+  if(S.screen!=='count')return;const st=STN[S.station];if(!st)return;
+  clockUpdate(ps);
+  if(st.role==='sig')for(const h of Object.keys(HEADS)){const x=$('#hx-'+h);if(x)x.textContent=sigStats(h)}
+  if(st.role!=='veh')renderTimers();
+  const pre=$('#prelft');if(pre&&ps.code==='pre')pre.textContent=mmss(ps.left);
+}
+function clockUpdate(ps){const c=$('#clock'),pg=$('#prog');if(!c)return;c.className='';
+  if(ps.code==='pre'){c.textContent=`Starts ${fT(S.session.t0)} · in ${mmss(ps.left)}`;c.className='pre';pg.style.width='0%'}
+  else if(ps.code==='end'){c.textContent=`Finished at ${fT(ps.end)}`;c.className='over';pg.style.width='100%'}
+  else{c.textContent=`${ps.i+1} of ${ps.n} · ${fT(ps.a)}–${fT(ps.b)} · ${mmss(ps.left)} left`;pg.style.width=(ps.frac*100)+'%'}}
 
 let wake=null;
 async function keepAwake(){try{if('wakeLock' in navigator&&!wake){wake=await navigator.wakeLock.request('screen');wake.addEventListener('release',()=>wake=null)}}catch(e){}}
@@ -297,30 +373,28 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 
 /* ---------- map ---------- */
 function mapSVG(mode,sel){
-  let s=`<svg viewBox="0 0 360 360" class="map" role="img" aria-label="Schematic of the King's Buildings junction, north at the top">
+  let s=`<svg viewBox="0 0 360 360" class="map ${mode==='mini'?'mini':''}" role="img" aria-label="Schematic of the King's Buildings junction, north at the top">
   <rect width="360" height="360" fill="var(--verge)"/>
   <rect x="145" y="0" width="70" height="360" fill="var(--tarmac)"/><rect x="0" y="145" width="360" height="70" fill="var(--tarmac)"/>
   <path d="M180 0V112M180 248V360M0 180H112M248 180H360" stroke="var(--lane)" stroke-width="2" stroke-dasharray="9 9" fill="none"/>
   <path d="M180 118H215M145 242H180M118 145V180M242 180V215" stroke="var(--lane)" stroke-width="4"/>`;
   if(sel&&STN[sel].role==='veh'){const r={N:[180,0,35,116],E:[244,180,116,35],S:[145,244,35,116],W:[0,145,116,35]}[STN[sel].app];
-    s+=`<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" fill="var(--marking)" opacity=".55"/>`}
+    s+=`<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" fill="var(--marking)" opacity=".6"/>`}
   const cx={N:[145,122,70,14],S:[145,224,70,14],W:[122,145,14,70],E:[224,145,14,70]};
-  const pedOn=mode==='ped'||(sel==='E');
-  const counts=mode==='ped'?pedCounts():{};
-  for(const k of ['N','E','S','W']){const [x,y,w,h]=cx[k];
-    const col=k==='W'?'var(--toucan)':'var(--lane)';
+  const pedOn=mode==='ped'||sel==='E';const counts=mode==='ped'?pedCounts():{};
+  for(const k of ['N','E','S','W']){const [x,y,w,h]=cx[k];const col=k==='W'?'var(--toucan)':'var(--lane)';
     s+=`<g class="${mode==='ped'?'cx-hit':''}" ${mode==='ped'?`data-act="ped" data-cx="${k}"`:''}>
       <rect x="${x-(w<20?14:0)}" y="${y-(h<20?14:0)}" width="${w+(w<20?28:0)}" height="${h+(h<20?28:0)}" fill="transparent"/>
-      <rect class="cx-band" x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${col}" stroke-width="2.5" stroke-dasharray="4 4" opacity="${pedOn?1:.7}"/>
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${col}" stroke-width="2.5" stroke-dasharray="4 4" opacity="${pedOn?1:.7}"/>
       ${pedOn?`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${col}" opacity=".35"/>`:''}
-      ${mode==='ped'?`<text x="${x+w/2}" y="${y+h/2+5}" text-anchor="middle" font-size="14" fill="var(--marking)" font-family="var(--mono)">${counts[k]||0}</text>`:''}
+      ${mode==='ped'?`<text x="${x+w/2}" y="${y+h/2+5}" text-anchor="middle" font-size="14" fill="var(--marking)">${counts[k]||0}</text>`:''}
     </g>`}
   s+=`<g class="${mode==='ped'?'cx-hit':''}" ${mode==='ped'?'data-act="ped" data-cx="D"':''}>
     <line x1="214" y1="146" x2="146" y2="214" stroke="transparent" stroke-width="34"/>
     <line x1="214" y1="146" x2="146" y2="214" stroke="var(--toucan)" stroke-width="${pedOn?10:6}" stroke-dasharray="5 5" opacity="${pedOn?1:.7}"/>
-    ${mode==='ped'?`<circle cx="180" cy="180" r="15" fill="var(--tarmac)" stroke="var(--toucan)" stroke-width="2"/><text x="180" y="185" text-anchor="middle" font-size="14" fill="var(--marking)" font-family="var(--mono)">${counts.D||0}</text>`:''}
-  </g>`;
-  s+=`<g font-size="10.5" fill="var(--lane)" opacity=".9">
+    ${mode==='ped'?`<circle cx="180" cy="180" r="15" fill="var(--tarmac)" stroke="var(--toucan)" stroke-width="2"/><text x="180" y="185" text-anchor="middle" font-size="14" fill="var(--marking)">${counts.D||0}</text>`:''}
+  </g>
+  <g font-size="10.5" fill="var(--lane)" opacity=".9">
     <text x="196" y="60" transform="rotate(-90 196 60)" text-anchor="middle">MAYFIELD RD (N)</text>
     <text x="164" y="300" transform="rotate(-90 164 300)" text-anchor="middle">MAYFIELD RD (S)</text>
     <text x="58" y="167" text-anchor="middle">WEST MAINS RD</text>
@@ -329,8 +403,8 @@ function mapSVG(mode,sel){
     <text x="12" y="22">No. 184</text><text x="348" y="22" text-anchor="end">No. 167</text>
     <text x="348" y="350" text-anchor="end">No. 169</text><text x="12" y="350">KING'S BUILDINGS</text></g>
   <g transform="translate(318 60)"><path d="M0 -16L7 4H-7Z" fill="var(--ink)"/><text y="18" text-anchor="middle" font-size="11" fill="var(--ink)">N</text></g>`;
-  if(mode==='pick'){for(const k in PIN){const [x,y]=PIN[k];
-    s+=`<g class="pin ${sel===k?'on':''}" data-act="brief" data-st="${k}" role="button" aria-label="Station ${k}"><circle cx="${x}" cy="${y}" r="21" fill="transparent" stroke="none"/><circle cx="${x}" cy="${y}" r="17"/><text x="${x}" y="${y+6}" text-anchor="middle">${k}</text></g>`}}
+  if(mode==='pick'||mode==='mini'){for(const k in PIN){const [x,y]=PIN[k];
+    s+=`<g class="pin ${sel===k?'on':''}" ${mode==='pick'?`data-act="brief" data-st="${k}" role="button"`:''} aria-label="Station ${k}"><circle cx="${x}" cy="${y}" r="21" fill="transparent" stroke="none"/><circle cx="${x}" cy="${y}" r="17"/><text x="${x}" y="${y+6}" text-anchor="middle">${k}</text></g>`}}
   return s+'</svg>';
 }
 function pedCounts(){const c={};for(const e of sesEv())if(e.k==='ped')c[e.cx]=(c[e.cx]||0)+1;return c}
@@ -355,105 +429,107 @@ const ARROW={
 /* ---------- screens ---------- */
 function render(){
   const app=$('#app');
-  const warn=storageOK?'':`<div class="warnbar">This browser is not saving progress. Keep this tab open and export before closing it.</div>`;
+  const warn=storageOK?'':`<div class="warnbar">This browser isn't saving progress. Keep this tab open and save your file before closing it.</div>`;
   if(S.screen==='setup')app.innerHTML=warn+setupHTML();
   else if(S.screen==='pick')app.innerHTML=warn+pickHTML();
-  else if(S.screen==='count'){app.innerHTML=warn+countHTML();refresh();keepAwake()}
+  else if(S.screen==='count'){app.innerHTML=warn+countHTML();refresh();renderStatus();keepAwake()}
   else if(S.screen==='end')app.innerHTML=warn+endHTML();
   renderSheet();
 }
+const discardHTML=()=>confirmDiscard?`<section class="card" id="discardBox"><h3>Discard this session?</h3><p class="small">This deletes all ${entryCount()} entries from this phone and goes back to the start. It can't be undone.</p><div class="row"><button class="btn warn" data-act="discard">Discard and go home</button><button class="btn" data-act="keep">Keep it</button></div></section>`:`<button class="linkbtn" data-act="askdiscard">Discard this session</button>`;
+const planLine=p=>`${fT(p.t0)}–${fT(planEnd(p))} · ${p.dur} min · ${p.iv}-min intervals`;
 function setupHTML(){
   const live=S.session;
-  const head=`<header class="brand"><span class="eyebrow">CIVE10033 · Traffic Think Tank</span><h1>KB Junction Counter</h1><span class="sub">Mayfield Rd × West Mains Rd × Esslemont Rd · ${fD(Date.now())}</span></header>`;
-  if(live){const n=sesEv().filter(e=>!['on','off'].includes(e.k)).length;
-    return head+`<section class="card"><span class="eyebrow">Session in progress</span>
-      <h2>${esc(live.obs)}</h2><p class="muted">Started ${fT(live.start)} on ${fD(live.start)} · ${n} entries · ${esc(live.wx)}</p>
+  const head=`<header class="brand"><span class="eyebrow">CIVE10033 · Traffic Think Tank</span><h1>KB Junction Counter</h1></header>`;
+  if(live){return head+`<section class="card"><span class="eyebrow">Session in progress</span>
+      <h2>${esc(live.obs)}</h2><p class="muted small">${fD(live.t0)} · ${planLine(live)}<br>${entryCount()} entries · ${esc(live.wx)}</p>
       <button class="btn primary block" data-act="resume">Resume counting</button>
-      <button class="btn block" data-act="toEnd">Finish and save data</button>
-      ${confirmDiscard?`<section class="card discard" id="discardBox"><h3>Discard this session?</h3><p class="small">This deletes all ${sesEv().filter(e=>!['on','off'].includes(e.k)).length} entries from this phone and goes back to the start. It can't be undone.</p><div class="row"><button class="btn warn" data-act="discard">Discard and go home</button><button class="btn" data-act="keep">Keep it</button></div></section>`:`<button class="linkbtn" data-act="askdiscard">Discard this session</button>`}</section>`}
-  return head+`
-  <section class="card"><h2>Who's counting?</h2>
-    <div class="grid3">${NAMES.map(n=>`<button class="pick ${draft.obs===n?'on':''}" data-act="obs" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div></section>
-  <section class="card"><h2>Weather right now</h2>
-    <div class="row">${WEATHER.map(w=>`<button class="chip ${draft.wx===w?'on':''}" data-act="wx" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div>
-    <p class="small muted">It goes in the export, so unusual conditions can be reported as a limitation.</p></section>
-  <button class="btn primary block" data-act="start" ${draft.obs&&draft.wx?'':'disabled'}>${draft.obs&&draft.wx?'Start session':'Pick your name and the weather'}</button>
-  <section class="card"><h3>How it works</h3><ol class="steps">
-    <li>Pick your station on the map and read its short briefing.</li>
-    <li>Tap to log each vehicle, person or signal change. Every tap is timestamped and grouped into 15-minute intervals for you.</li>
-    <li>At the end, save your Excel file and send it to Harry.</li></ol>
-    <p class="small muted">Your taps are saved on this phone as you go, so a dropped signal, a locked screen or a closed tab won't lose anything.</p></section>`;
+      <button class="btn block" data-act="toEnd">Finish and save data</button></section>${discardHTML()}`}
+  const ok=draft.obs&&draft.wx&&draft.time;
+  const step=(n,done,title,body)=>`<section class="card step ${done?'done':''}"><h2><span class="num">${n}</span>${title}</h2>${body}</section>`;
+  return head+
+  step(1,draft.obs,'Your name',`<div class="grid3">${NAMES.map(n=>`<button class="pick ${draft.obs===n?'on':''}" data-act="obs" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div>`)+
+  step(2,draft.wx,'Weather now',`<div class="row">${WEATHER.map(w=>`<button class="chip ${draft.wx===w?'on':''}" data-act="wx" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div>`)+
+  step(3,draft.time,'Start time',`<div class="timein"><input type="time" id="t0" step="60" value="${draft.time}" aria-label="Start time"><button class="chip" data-act="now">Now</button></div><p class="hint">Use the time the group agreed. Everyone should enter the same.</p>`)+
+  step(4,true,'Duration',`<div class="row">${DURS.map(d=>`<button class="chip ${draft.dur===d?'on':''}" data-act="dur" data-v="${d}">${d<60?d+' min':(d/60)+(d===60?' hour':' hours')}</button>`).join('')}</div>`)+
+  step(5,true,'Interval length',`<div class="row">${IVS.map(v=>`<button class="chip ${draft.iv===v?'on':''}" data-act="iv" data-v="${v}" ${v>draft.dur?'disabled':''}>${v<60?v+' min':'1 hour'}</button>`).join('')}</div><p class="hint">Counts are grouped into intervals from the start time.</p>`)+
+  `<button class="btn primary block" data-act="start" ${ok?'':'disabled'}>${ok?`Start · ${draft.time} · ${draft.dur} min · ${draft.iv}-min intervals`:'Fill in the steps above'}</button>
+  <p class="hint" style="text-align:center">Taps are saved on this phone as you go. You can open the counter before the start time.</p>`;
 }
 function pickHTML(){
   const cur=S.station;
-  return `<header class="brand"><span class="eyebrow">${esc(S.session.obs)} · ${esc(S.session.wx)}</span><h1>Where are you standing?</h1><p class="muted">Tap a station on the map or in the list.</p></header>
+  return `<header class="brand"><span class="eyebrow">${esc(S.session.obs)} · ${planLine(S.session)}</span><h1>Where are you standing?</h1></header>
   ${mapSVG('pick',brief||cur)}
-  <div class="stn-list">${Object.keys(STN).map(k=>`<button class="stn ${cur===k?'on':''}" data-act="brief" data-st="${k}"><span class="lt">${k}</span><span><span class="t">${STN[k].title}</span><br><span class="d"><span class="tag">${{veh:'Vehicles',ped:'Pedestrians',sig:'Signals'}[STN[k].role]}</span>${STN[k].corner} corner</span></span></button>`).join('')}</div>
-  <section class="card"><h3>Before you start</h3><ul style="margin:0;padding-left:18px">
-    <li>Hi-vis on. No headphones or earpieces.</li><li>Stand at least 1 m back from the kerb, on the footway.</li>
-    <li>Stay within sight of your buddy.</li><li>Never walk while looking at your phone.</li></ul></section>
+  <div class="list">${Object.keys(STN).map(k=>`<button class="stn ${cur===k?'on':''}" data-act="brief" data-st="${k}"><span class="lt">${k}</span><span><span class="t">${STN[k].title}</span><span class="d">${ROLE[STN[k].role]} · ${STN[k].corner} corner</span></span><span class="chev" aria-hidden="true">›</span></button>`).join('')}</div>
+  <section class="card"><h3>Before you start</h3><ul class="plain small">
+    <li>Hi-vis on, no headphones.</li><li>Stay on the footway, 1 m back from the kerb.</li><li>Keep your buddy in sight. Don't walk while tapping.</li></ul></section>
   ${cur?`<button class="btn block" data-act="backCount">Back to station ${cur}</button>`:`<button class="btn block" data-act="home">Back</button>`}
-  ${confirmDiscard?`<section class="card discard" id="discardBox"><h3>Discard this session?</h3><p class="small">This deletes all ${sesEv().filter(e=>!['on','off'].includes(e.k)).length} entries from this phone and goes back to the start. It can't be undone.</p><div class="row"><button class="btn warn" data-act="discard">Discard and go home</button><button class="btn" data-act="keep">Keep it</button></div></section>`:`<button class="linkbtn" data-act="askdiscard">Discard this session</button>`}`;
+  ${discardHTML()}`;
 }
 function renderSheet(){
-  let w=document.querySelector('.sheet-wrap');if(w)w.remove();
-  if(!brief)return;
-  const st=STN[brief];
+  document.querySelector('.sheet-wrap')?.remove();
+  if(!brief)return;const st=STN[brief];
   const html=`<div class="sheet-wrap" data-act="closeBrief"><div class="sheet" role="dialog" aria-modal="true" aria-label="Station ${brief} instructions">
-    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="eyebrow">Station ${brief} · ${st.corner} corner</span><button class="chip" data-act="closeBrief">Close</button></div>
-    <h2>${st.title}</h2>${BRIEF[st.role](brief)}
-    ${S.screen==='pick'?`<button class="btn primary block" data-act="go" data-st="${brief}">${S.station===brief?'Continue at':'Start counting at'} station ${brief}</button>`:''}
+    <div class="grab" aria-hidden="true"></div>
+    <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="eyebrow">Station ${brief} · ${ROLE[st.role]}</span><button class="chip" data-act="closeBrief">Close</button></div>
+    <h2>${st.title}</h2>
+    ${mapSVG('mini',brief)}
+    <ol class="three">${STEPS[st.role](brief).map(t=>`<li><span>${t}</span></li>`).join('')}</ol>
+    <details><summary>More detail</summary>${MORE[st.role](brief)}</details>
+    ${S.screen==='pick'?`<button class="btn primary block" data-act="go" data-st="${brief}">${S.station===brief?'Continue at':'Start at'} station ${brief}</button>`:''}
   </div></div>`;
   document.body.insertAdjacentHTML('beforeend',html);
 }
 function barHTML(){const st=S.station,s=STN[st];
   const lbl={veh:'vehicles',ped:'people',sig:'changes'}[s.role];
-  return `<div class="bar"><button class="stl" data-act="brief" data-st="${st}" aria-label="Station ${st} briefing">${st}</button>
+  return `<div class="bar"><button class="stl" data-act="brief" data-st="${st}" aria-label="Station ${st} instructions">${st}</button>
    <div class="ttl"><b>${s.bar}</b><span id="clock">--</span></div>
    <div class="total"><div><span class="n" id="tot">0</span><span class="lbl">${lbl}</span></div><button class="undo" data-act="undo">Undo</button></div>
-   <div class="tools"><button class="help" data-act="brief" data-st="${st}">ⓘ Instructions</button><button data-act="switch">Switch station</button></div>
+   <div class="tools"><button class="tool" data-act="brief" data-st="${st}">Instructions</button><button class="tool" data-act="switch">Switch station</button></div>
    <div class="prog" aria-hidden="true"><i id="prog"></i></div></div>`}
+function renderStatus(){const box=$('#status');if(!box)return;const ps=planState();
+  if(ps.code==='pre'){box.className='status pre';box.innerHTML=`<span>Counting starts in <b id="prelft">${mmss(ps.left)}</b>. Early taps are flagged in the export.</span>`;box.hidden=false}
+  else if(ps.code==='end'){box.className='status over';box.innerHTML=`<span>Time's up. Taps now are flagged as after the end.</span><button class="btn" data-act="toEnd">Finish</button>`;box.hidden=false}
+  else box.hidden=true}
 function countHTML(){const st=S.station,s=STN[st];let body='';
   if(s.role==='veh'){const a=APP[s.app];
-   body=`<section class="classes" role="group" aria-label="Vehicle type">${CLASSES.map(c=>`<button class="cls ${c.k==='voi'?'voi':''}" id="cls-${c.k}" data-act="sel" data-k="${c.k}">${icon(c.k)}<span class="cl">${c.label}</span><span class="ch">${c.hint}</span></button>`).join('')}</section>
+   body=`<section class="classes" role="group" aria-label="Vehicle type">${CLASSES.map(c=>`<button class="cls ${c.k==='voi'?'voi':''}" id="cls-${c.k}" data-act="sel" data-k="${c.k}" aria-label="${c.label}: ${c.hint}">${icon(c.k)}<span class="cl">${c.label}</span></button>`).join('')}</section>
    <div class="next"><span>Next tap logs: <b id="selname">Car / Taxi</b></span><span class="muted">from ${a.road}</span></div>
    <section class="pad" id="pad">${['L','A','R'].map(m=>`<button class="mv" id="mv-${m}" data-act="veh" data-m="${m}">${ARROW[m]}<span class="mvl">${MV[m]}</span><span class="mvd">to ${a[m]}</span><span class="mvn" id="mvn-${m}">0</span></button>`).join('')}</section>
-   <section class="card"><div class="row" style="justify-content:space-between"><h3>Queue at end of red</h3><span class="small muted" id="qlast">None logged yet</span></div>
+   <section class="card"><div class="row" style="justify-content:space-between"><h3>Queue at end of red</h3><span class="small muted" id="qlast"></span></div>
     <div class="qrow"><button class="qbtn" data-act="qm" aria-label="One fewer">−</button><output id="qn">0</output><button class="qbtn" data-act="qp" aria-label="One more">+</button></div>
     <button class="btn primary block" data-act="qlog">Log queue</button></section>`}
   else if(s.role==='ped'){
    body=`<div class="row" role="group" aria-label="Who is crossing">${['Pedestrian','Cyclist','Voi'].map(w=>`<button class="chip" id="who-${w}" data-act="who" data-v="${w}">${w==='Voi'?'Voi e-bike':w}</button>`).join('')}</div>
    <div id="pedmap">${mapSVG('ped')}</div>
    <div class="cxbtns">${CXS.map(k=>`<button class="cxb ${k==='D'?'full':''} ${k==='W'||k==='D'?'toucan':''}" id="cx-${k}" data-act="ped" data-cx="${k}"><span>${CROSS[k]}</span><span class="n" id="cxn-${k}">0</span></button>`).join('')}</div>
-   <section class="card"><h3>Pedestrian wait timer</h3><p class="small muted">Start when someone reaches the kerb with the green man off. Tap their timer when they step off.</p>
-    <div class="row">${CXS.map(k=>`<button class="chip" data-act="pstart" data-cx="${k}">Start: ${k==='D'?'Diagonal':CROSS[k].replace(' (toucan)','')}</button>`).join('')}</div>
+   <section class="card"><h3>Wait timer</h3><p class="small muted">Start when someone reaches the kerb with the green man off. Tap their timer when they step off.</p>
+    <div class="row">${CXS.map(k=>`<button class="chip" data-act="pstart" data-cx="${k}">${k==='D'?'Diagonal':CROSS[k].replace(' (toucan)','')}</button>`).join('')}</div>
     <div class="timers" id="timers"></div><p class="small muted" id="pdsum"></p></section>`}
   else{
    body=`<section class="heads">${Object.keys(HEADS).map(h=>`<button class="head ${h==='P'?'full':''}" id="hd-${h}" data-act="sig" data-h="${h}"><span class="sig3" aria-hidden="true"><i></i><i></i><i></i></span><span class="hn">${HEADS[h]}</span><span class="hs" id="hs-${h}"></span><span class="hx" id="hx-${h}"></span></button>`).join('')}</section>
-   <section class="card"><h3>Bus stopped at a red light</h3><p class="small muted">Tap its approach when it stops. Tap the timer when it crosses the stop line.</p>
+   <section class="card"><h3>Bus stopped at a red light</h3><p class="small muted">Tap its road when it stops. Tap the timer when it moves off.</p>
     <div class="grid3" style="grid-template-columns:repeat(2,1fr)">${APPS.map(a=>`<button class="pick" data-act="bstart" data-app="${a}">${APP[a].road}</button>`).join('')}</div>
     <div class="timers" id="timers"></div><p class="small muted" id="bdsum"></p></section>`}
-  return barHTML()+`<p class="last" id="last" aria-live="polite"></p>`+body+`
+  return barHTML()+`<div id="status" hidden></div><p class="last" id="last" aria-live="polite"></p>`+body+`
   <section class="card"><h3>Add a note</h3><textarea id="note" rows="2" placeholder="e.g. bin lorry blocking left lane, 2 min"></textarea><button class="btn" data-act="note">Save note</button></section>
   <section class="card"><h3>Weather changed?</h3><div class="row">${WEATHER.map(w=>`<button class="chip ${S.session.wx===w?'on':''}" data-act="wxnow" data-v="${esc(w)}">${esc(w)}</button>`).join('')}</div></section>
-  <button class="btn warn block" data-act="toEnd">Finish session and save data</button>
-  <p class="small muted" style="text-align:center">Saved on this phone as you go. Safe to lock the screen or lose signal.</p>
-  ${confirmDiscard?`<section class="card discard" id="discardBox"><h3>Discard this session?</h3><p class="small">This deletes all ${sesEv().filter(e=>!['on','off'].includes(e.k)).length} entries from this phone and goes back to the start. It can't be undone.</p><div class="row"><button class="btn warn" data-act="discard">Discard and go home</button><button class="btn" data-act="keep">Keep it</button></div></section>`:`<button class="linkbtn" data-act="askdiscard">Discard this session</button>`}`;
+  <button class="btn primary block" data-act="toEnd">Finish and save data</button>
+  <p class="hint" style="text-align:center">Saved on this phone as you go. Safe to lock the screen or lose signal.</p>
+  ${discardHTML()}`;
 }
 function refresh(){
   if(S.screen!=='count')return;const st=S.station,s=STN[st],ev=sesEv();
   $('#tot').textContent=stationTotal(st);
-  const le=lastEntry();$('#last').innerHTML=le?`Last entry: <b>${esc(describe(le))}</b> at ${fT(le.t,1)}`:'No entries yet at this station';
-  const now=Date.now(),q0=qf(now);
-  const inIv=ev.filter(e=>e.st===st&&TAPK[s.role].includes(e.k)&&e.t>=q0).length;
-  $('#clock').textContent=`${fT(q0)}–${fT(q0+Q)} · ${mmss(q0+Q-now)} left`;$('#prog').style.width=((now-q0)/Q*100)+'%';
+  const le=lastEntry();$('#last').innerHTML=le?`Last: <b>${esc(describe(le))}</b> at ${fT(le.t,1)}`:'No entries yet at this station';
+  clockUpdate(planState());
   if(s.role==='veh'){
     CLASSES.forEach(c=>$('#cls-'+c.k).classList.toggle('on',S.sel===c.k));
     $('#selname').textContent=CLS[S.sel].label;$('#pad').classList.toggle('armed',S.sel!=='car');
     for(const m of ['L','A','R'])$('#mvn-'+m).textContent=ev.filter(e=>e.k==='veh'&&e.app===s.app&&e.m===m).length;
-    $('#qn').value=S.queue[s.app];$('#qn').textContent=S.queue[s.app];
+    $('#qn').textContent=S.queue[s.app];
     const ql=ev.filter(e=>e.k==='queue'&&e.app===s.app);
-    $('#qlast').textContent=ql.length?`Last: ${ql[ql.length-1].n} at ${fT(ql[ql.length-1].t,1)} · ${ql.length} logged`:'None logged yet';
+    $('#qlast').textContent=ql.length?`Last ${ql[ql.length-1].n} · ${ql.length} logged`:'';
   }else if(s.role==='ped'){
     ['Pedestrian','Cyclist','Voi'].forEach(w=>$('#who-'+w).classList.toggle('on',S.who===w));
     const c=pedCounts();CXS.forEach(k=>$('#cxn-'+k).textContent=c[k]||0);
@@ -464,66 +540,75 @@ function refresh(){
   }else{
     for(const h of Object.keys(HEADS)){const last=sigState(h),el=$('#hd-'+h);
       el.classList.toggle('g',last?.ch==='G');el.classList.toggle('r',last?.ch==='A');
-      $('#hs-'+h).textContent=last?.ch==='G'?(h==='P'?'Tap when it goes off':'Tap when it turns AMBER'):(h==='P'?'Tap when green man comes on':'Tap when it turns GREEN');
-      const st2=sigStats(h);$('#hx-'+h).textContent=st2;}
+      $('#hs-'+h).textContent=last?.ch==='G'?(h==='P'?'Tap when it goes off':'Tap when it turns amber'):(h==='P'?'Tap when it comes on':'Tap when it turns green');
+      $('#hx-'+h).textContent=sigStats(h)}
     const bd=ev.filter(e=>e.k==='bus');
     $('#bdsum').textContent=bd.length?`${bd.length} buses timed · mean ${r1(bd.reduce((a,e)=>a+(e.t-e.t0),0)/bd.length/1000)} s`:'';
     renderTimers();
   }
 }
 function sigStats(h){const ev=sesEv().filter(e=>e.k==='sig'&&e.h===h);const now=Date.now();
-  if(!ev.length)return 'No changes logged';
+  if(!ev.length)return 'No changes yet';
   const last=ev[ev.length-1];let out=[];
   if(last.ch==='G')out.push('green for '+mmss(now-last.t));
   const g=ev.filter(e=>e.ch==='G');
   for(let i=ev.length-1;i>0;i--){if(ev[i].ch==='A'&&ev[i-1].ch==='G'){out.push('last green '+Math.round((ev[i].t-ev[i-1].t)/1000)+' s');break}}
-  if(g.length>1){const c=(g[g.length-1].t-g[g.length-2].t)/1000;if(c<300)out.push('last cycle '+Math.round(c)+' s')}
+  if(g.length>1){const c=(g[g.length-1].t-g[g.length-2].t)/1000;if(c<300)out.push('cycle '+Math.round(c)+' s')}
   return out.join(' · ')||'Waiting for next change';
 }
 function renderTimers(){const box=$('#timers');if(!box)return;const now=Date.now();
   const mine=S.timers.filter(t=>t.ses===S.session.id&&t.st===S.station);
-  box.innerHTML=mine.map(t=>`<div class="timer"><button class="go" data-act="tstop" data-id="${t.id}"><span>${t.k==='bus'?'Bus · '+APP[t.app].road:'Waiting · '+CROSS[t.cx]}<br><span class="small muted">${t.k==='bus'?'Tap when it crosses the line':'Tap when they step off'}</span></span><b>${mmss(now-t.t0)}</b></button><button class="x" data-act="tcancel" data-id="${t.id}">Cancel</button></div>`).join('');
+  box.innerHTML=mine.map(t=>`<div class="timer"><button class="go" data-act="tstop" data-id="${t.id}"><span>${t.k==='bus'?'Bus · '+APP[t.app].road:'Waiting · '+CROSS[t.cx]}<br><span class="small muted">${t.k==='bus'?'Tap when it moves off':'Tap when they step off'}</span></span><b>${mmss(now-t.t0)}</b></button><button class="x" data-act="tcancel" data-id="${t.id}">Cancel</button></div>`).join('');
 }
 function endHTML(){
-  const ev=sesEv();const by=k=>ev.filter(e=>e.k===k);
-  const rows=[];
+  const ev=sesEv();const by=k=>ev.filter(e=>e.k===k);const rows=[];
   for(const a of APPS){const n=by('veh').filter(e=>e.app===a).length;if(n)rows.push([`Vehicles from ${APP[a].road}`,n])}
   if(by('queue').length)rows.push(['Queues logged',by('queue').length]);
   for(const k of CXS){const n=by('ped').filter(e=>e.cx===k).length;if(n)rows.push([`Crossing: ${CROSS[k]}`,n])}
-  if(by('pdelay').length)rows.push(['Pedestrian waits timed',by('pdelay').length]);
+  if(by('pdelay').length)rows.push(['Wait times',by('pdelay').length]);
   if(by('sig').length)rows.push(['Signal changes',by('sig').length]);
-  if(by('bus').length)rows.push(['Bus delays timed',by('bus').length]);
+  if(by('bus').length)rows.push(['Bus delays',by('bus').length]);
   if(by('note').length)rows.push(['Notes',by('note').length]);
-  return `<header class="brand"><span class="eyebrow">Finish session</span><h1>Save your data</h1><p class="muted">${esc(S.session.obs)} · ${fD(S.session.start)} · ${fT(S.session.start)} to ${fT(Date.now())}</p></header>
-  <section class="card"><table class="sum"><tbody>${rows.length?rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(''):'<tr><td>Nothing logged yet</td><td>0</td></tr>'}</tbody></table></section>
-  <section class="card"><h3>1. Save the Excel file</h3><p class="small muted">It has your raw taps plus 15-minute tables in the same layout as the UK count sheet. Send it to Harry when you're done.</p>
-   <p class="small muted">On iPhone, if the file opens instead of saving, tap the share icon and choose Save to Files or send it straight to the group chat.</p>
+  const p=S.session;const outside=ev.filter(e=>!['on','off','note'].includes(e.k)&&windowTag(e.t,p)!=='Yes').length;
+  return `<header class="brand"><span class="eyebrow">${esc(p.obs)} · ${fD(p.t0)} · ${planLine(p)}</span><h1>Save your data</h1></header>
+  <section class="card"><table class="sum"><tbody>${rows.length?rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join(''):'<tr><td>Nothing logged yet</td><td>0</td></tr>'}</tbody></table>
+   ${outside?`<p class="small muted">${outside} entries were outside ${fT(p.t0)}–${fT(planEnd(p))}. They're kept and flagged in the file.</p>`:''}</section>
+  <section class="card"><h3>1. Save your file</h3><p class="small muted">Send it to Harry when you're done. On iPhone, if the file opens instead of saving, tap the share icon and choose Save to Files or send it to the group chat.</p>
    ${savedAt?`<div class="saved">✓ Saved at ${fT(savedAt,1)}. Send it to Harry, then you can clear this phone.</div>`:''}
-   <button class="btn ${savedAt?'':'primary'} block" data-act="export" id="exportBtn">${savedAt?'Save again':'Save Excel file'}</button>
+   <button class="btn ${savedAt?'':'primary'} block" data-act="export" id="exportBtn">${savedAt?'Save Excel again':'Save Excel file'}</button>
+   <button class="btn block" data-act="exportcsv" id="csvBtn">Save CSV file</button>
    <button class="btn block" data-act="copycsv">Copy data as text (backup)</button>
    <textarea id="csvout" rows="4" hidden readonly></textarea></section>
-  <section class="card"><h3>2. Clear this phone</h3><p class="small muted">Only after your file is saved. This removes the session from this phone.</p>
+  <section class="card"><h3>2. Clear this phone</h3><p class="small muted">Only once your file is saved.</p>
    ${confirmNew?`<p><b>Have you saved your file? This can't be undone.</b></p><div class="row"><button class="btn warn" data-act="clear">Yes, clear it</button><button class="btn" data-act="noclear">Cancel</button></div>`:`<button class="btn warn block" data-act="askclear">Clear and start a new session</button>`}</section>
   <button class="btn block" data-act="resume">Back to counting</button>`;
 }
+
 /* ---------- actions ---------- */
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   if(b.dataset.act==='closeBrief'&&e.target!==b&&b.classList.contains('sheet-wrap'))return;
   act(b.dataset.act,b.dataset,b);
 });
+document.addEventListener('input',e=>{if(e.target.id==='t0'){draft.time=e.target.value;const btn=document.querySelector('[data-act=start]');const ok=draft.obs&&draft.wx&&draft.time;
+  btn.disabled=!ok;btn.textContent=ok?`Start · ${draft.time} · ${draft.dur} min · ${draft.iv}-min intervals`:'Fill in the steps above';e.target.closest('.step').classList.toggle('done',!!draft.time)}});
 
 function act(a,d,el){
   switch(a){
   case 'obs':draft.obs=d.v;render();break;
   case 'wx':draft.wx=d.v;render();break;
-  case 'start':savedAt=null;try{localStorage.setItem(LAST,JSON.stringify({obs:draft.obs}))}catch(e){}
-    S.session={id:uid(),obs:draft.obs,wx:draft.wx,start:Date.now()};S.screen='pick';S.station=null;save();render();break;
-  case 'resume':confirmDiscard=false;S.screen=S.station?'count':'pick';save();render();break;
+  case 'now':{const n=new Date();draft.time=pad(n.getHours())+':'+pad(n.getMinutes());render();break}
+  case 'dur':draft.dur=+d.v;if(draft.iv>draft.dur)draft.iv=IVS.filter(v=>v<=draft.dur).pop();render();break;
+  case 'iv':draft.iv=+d.v;render();break;
+  case 'start':{if(!(draft.obs&&draft.wx&&draft.time))break;unlockAudio();savedAt=null;
+    try{localStorage.setItem(LAST,JSON.stringify({obs:draft.obs,dur:draft.dur,iv:draft.iv}))}catch(e){}
+    S.session={id:uid(),obs:draft.obs,wx:draft.wx,start:Date.now(),t0:timeToday(draft.time),dur:draft.dur,iv:draft.iv};
+    prevCode=null;S.screen='pick';S.station=null;save();render();window.scrollTo(0,0);break}
+  case 'resume':unlockAudio();confirmDiscard=false;S.screen=S.station?'count':'pick';save();render();break;
   case 'home':S.screen='setup';save();render();break;
   case 'brief':brief=d.st;renderSheet();if(S.screen==='pick')render();break;
   case 'closeBrief':brief=null;renderSheet();if(S.screen==='pick')render();break;
-  case 'go':{const st=d.st;brief=null;
+  case 'go':{const st=d.st;brief=null;unlockAudio();
     if(S.station!==st){if(S.station)log('off',{st:S.station});S.station=st;log('on',{st})}
     S.sel='car';S.screen='count';save();render();window.scrollTo(0,0);break}
   case 'switch':confirmDiscard=false;S.screen='pick';save();render();window.scrollTo(0,0);break;
@@ -543,19 +628,21 @@ function act(a,d,el){
   case 'sig':{const last=sigState(d.h);const ch=last?.ch==='G'?'A':'G';log('sig',{h:d.h,ch});flash(el);buzz();refresh();break}
   case 'undo':{const ev=S.events;let i=ev.length-1;
     while(i>=0&&!(ev[i].ses===S.session.id&&ev[i].st===S.station&&!['on','off','note'].includes(ev[i].k)))i--;
-    if(i<0){toast('Nothing to undo at this station')}else{const e=ev.splice(i,1)[0];save();toast('Undid: '+describe(e))}
+    if(i<0)toast('Nothing to undo at this station');else{const e=ev.splice(i,1)[0];save();toast('Undid: '+describe(e))}
     refresh();break}
   case 'wxnow':if(S.session.wx!==d.v){S.session.wx=d.v;log('note',{note:'Weather now: '+d.v});save();render();toast('Weather updated')}break;
+  case 'hidesum':$('#ivsum').hidden=true;break;
   case 'askdiscard':confirmDiscard=true;render();setTimeout(()=>$('#discardBox')?.scrollIntoView({behavior:'smooth',block:'center'}),30);break;
   case 'keep':confirmDiscard=false;render();break;
-  case 'discard':{S.timers=[];S=fresh();save();draft={obs:lastPick().obs||null,wx:null};confirmDiscard=false;brief=null;savedAt=null;render();window.scrollTo(0,0);toast('Session discarded');break}
+  case 'discard':S=fresh();save();draft=newDraft();draft.time=nextFive();confirmDiscard=false;brief=null;savedAt=null;prevCode=null;render();window.scrollTo(0,0);toast('Session discarded');break;
   case 'note':{const v=$('#note').value.trim();if(!v){toast('Type a note first');break}log('note',{note:v});$('#note').value='';toast('Note saved');break}
   case 'toEnd':brief=null;confirmNew=false;S.screen='end';save();render();window.scrollTo(0,0);break;
   case 'export':doExport();break;
+  case 'exportcsv':doCSV();break;
   case 'copycsv':copyCSV();break;
   case 'askclear':confirmNew=true;render();break;
   case 'noclear':confirmNew=false;render();break;
-  case 'clear':S=fresh();save();draft={obs:lastPick().obs||null,wx:null};confirmNew=false;render();toast('Cleared. Ready for a new session.');break;
+  case 'clear':S=fresh();save();draft=newDraft();draft.time=nextFive();confirmNew=false;prevCode=null;render();toast('Cleared. Ready for a new session.');break;
   }
 }
 function describe(e){
@@ -565,92 +652,93 @@ function describe(e){
   if(e.k==='sig')return `${HEADS[e.h]} ${e.ch==='G'?'green':'amber'}`;
   if(e.k==='bus')return 'bus delay';
   if(e.k==='pdelay')return 'wait time';
-  if(e.k==='note')return 'note';return e.k;
+  return e.k;
 }
-setInterval(()=>{if(S.screen==='count'){const st=STN[S.station];
-  if(!st)return;const now=Date.now(),q0=qf(now);const c=$('#clock');
-  if(c){const inIv=sesEv().filter(e=>e.st===S.station&&TAPK[st.role].includes(e.k)&&e.t>=q0).length;c.textContent=`${fT(q0)}–${fT(q0+Q)} · ${mmss(q0+Q-now)} left`;const pg=$('#prog');if(pg)pg.style.width=((now-q0)/Q*100)+'%'}
-  if(st.role==='sig')for(const h of Object.keys(HEADS)){const x=$('#hx-'+h);if(x)x.textContent=sigStats(h)}
-  if(st.role!=='veh')renderTimers();}},1000);
+setInterval(tick,1000);
 
 /* ---------- export ---------- */
-const RAW=[['ID','id'],['Epoch ms','t'],['Date',null],['Time',null],['Observer','obs'],['Weather','wx'],['Session','ses'],['Station','st'],['Kind','k'],
-  ['Approach','app'],['Movement','m'],['Vehicle class','cls'],['Queue (veh)','n'],['Crossing','cx'],['User type','who'],['Signal','h'],['Change','ch'],['Start epoch ms','t0'],['Duration (s)',null],['Note','note']];
-function rawRows(ev){return [RAW.map(r=>r[0]),...ev.map(e=>RAW.map(([h,f])=>{
+const RAW=[['Date',null],['Time',null],['Observer','obs'],['Station','st'],['Kind','k'],['In session window',null],['Interval',null],
+  ['Approach','app'],['Movement','m'],['Vehicle class','cls'],['Queue (veh)','n'],['Crossing','cx'],['User type','who'],['Signal','h'],['Change','ch'],['Duration (s)',null],['Weather','wx'],['Note','note'],['Epoch ms','t'],['Start epoch ms','t0'],['ID','id'],['Session','ses']];
+function rawRows(ev,p){return [RAW.map(r=>r[0]),...ev.map(e=>RAW.map(([h,f])=>{
   if(h==='Date')return fD(e.t);if(h==='Time')return fT(e.t,1);if(h==='Duration (s)')return e.t0?r1((e.t-e.t0)/1000):'';
+  if(h==='In session window')return windowTag(e.t,p);if(h==='Interval')return binLabel(binStart(e.t,p),p);
   const v=e[f];return v===undefined||v===null?'':v}))]}
 
-function spans(ev){const by={};for(const e of ev)(by[e.ses]=by[e.ses]||[]).push(e);const out=[];
-  for(const k in by){const l=by[k].sort((a,b)=>a.t-b.t);let o=null;
-    for(const e of l){if(e.k==='on'){if(o){o.b=e.t;out.push(o)}o={st:e.st,a:e.t,obs:e.obs}}else if(e.k==='off'&&o){o.b=e.t;out.push(o);o=null}}
-    if(o){o.b=Math.max(l[l.length-1].t,o.a);out.push(o)}}
-  return out}
-function cover(sp,st,i0,i1){let m=0;for(const s of sp)if(s.st===st)m+=Math.max(0,Math.min(s.b,i1)-Math.max(s.a,i0));return Math.min(15,r1(m/60000))}
+function spans(ev){const out=[];let o=null;
+  for(const e of ev){if(e.k==='on'){if(o){o.b=e.t;out.push(o)}o={st:e.st,a:e.t}}else if(e.k==='off'&&o){o.b=e.t;out.push(o);o=null}}
+  if(o){o.b=Math.max(ev[ev.length-1].t,o.a);out.push(o)}return out}
+function cover(sp,st,i0,i1){let m=0;for(const s of sp)if(s.st===st)m+=Math.max(0,Math.min(s.b,i1)-Math.max(s.a,i0));return r1(Math.min(m,i1-i0)/MIN)}
 const uniq=a=>[...new Set(a.filter(Boolean))].join(', ');
 const mean=a=>a.length?r1(a.reduce((x,y)=>x+y,0)/a.length):'';
 
-function buildWB(evIn){
+function bins(sp,ev,p,stFilter,evFilter){const set=new Set();
+  for(let a=p.t0;a<planEnd(p);a+=p.iv*MIN)if(sp.some(s=>stFilter(s.st)&&s.a<binEnd(a,p)&&s.b>a))set.add(a);
+  for(const e of ev)if(evFilter(e))set.add(binStart(e.t,p));
+  return [...set].sort((x,y)=>x-y)}
+
+function buildWB(evIn,p){
   const ev=evIn.slice().sort((a,b)=>a.t-b.t);const sp=spans(ev);const wb=XLSX.utils.book_new();
   const add=(name,aoa,w)=>{const ws=XLSX.utils.aoa_to_sheet(aoa);if(w)ws['!cols']=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
-  // Summary
-  const ses={};for(const e of ev){const s=ses[e.ses]=ses[e.ses]||{obs:e.obs,wx:e.wx,a:e.t,b:e.t,st:new Set(),n:0};s.a=Math.min(s.a,e.t);s.b=Math.max(s.b,e.t);if(e.st)s.st.add(e.st);if(!['on','off'].includes(e.k))s.n++}
-  const sum=[['KB Junction Counter export'],['Site','Mayfield Rd / West Mains Rd / Esslemont Rd (Kings Buildings)'],['Created',fD(Date.now())+' '+fT(Date.now())],[],
-    ['Observer','Date','Start','End','Weather','Stations','Entries'],...Object.values(ses).map(s=>[s.obs,fD(s.a),fT(s.a),fT(s.b),s.wx,[...s.st].sort().join(', '),s.n]),[],
-    ['Stations'],...Object.entries(STN).map(([k,s])=>[k,s.title,s.corner+' corner'])];
-  add('Summary',sum,[14,12,8,8,16,12,10]);
+  const stations=[...new Set(ev.map(e=>e.st).filter(Boolean))].sort();
+  const sum=[['KB Junction Counter export'],['Site','Mayfield Rd / West Mains Rd / Esslemont Rd (Kings Buildings)'],
+    ['Observer',p.obs],['Date',fD(p.t0)],['Planned start',fT(p.t0)],['Planned end',fT(planEnd(p))],['Duration (min)',p.dur],['Interval (min)',p.iv],
+    ['Weather',uniq(ev.map(e=>e.wx))],['Stations used',stations.join(', ')],['Entries',ev.filter(e=>!['on','off'].includes(e.k)).length],
+    ['Entries outside the planned window',ev.filter(e=>!['on','off','note'].includes(e.k)&&windowTag(e.t,p)!=='Yes').length],
+    ['Created',fD(Date.now())+' '+fT(Date.now())],[],['Stations'],...Object.entries(STN).map(([k,s])=>[k,s.title,s.corner+' corner'])];
+  add('Summary',sum,[34,40,14]);
+  const ivNote=(a,cov,len)=>[binLabel(a,p)==='Before start'||binLabel(a,p)==='After end'?'Outside planned session':'',cov<len-0.5?`Partial: ${cov} of ${len} min observed`:''].filter(Boolean).join('; ');
   // Turning counts
-  const keys=new Set();
-  for(const s of sp)if(STN[s.st]?.role==='veh')for(let iv=qf(s.a);iv<s.b;iv+=Q)keys.add(iv+'|'+STN[s.st].app);
-  for(const e of ev)if(e.k==='veh')keys.add(qf(e.t)+'|'+e.app);
-  const ks=[...keys].map(k=>{const [iv,app]=k.split('|');return [Number(iv),app]}).sort((a,b)=>a[0]-b[0]||APPS.indexOf(a[1])-APPS.indexOf(b[1]));
-  const tc=[['Date','Site/Junction','Observer','Weather','Interval Start','Interval End','Approach','Road','Movement','To','Car/Taxi','LGV/Van','HGV Rigid','HGV Artic','Bus/Coach','Motorcycle','Pedal Cycle','Voi e-bike','Total (veh)','PCU Total','Flow (PCU/h)','Minutes observed','Notes']];
+  const tc=[['Date','Site/Junction','Observer','Weather','Interval','Interval Start','Interval End','Approach','Road','Movement','To','Car/Taxi','LGV/Van','HGV Rigid','HGV Artic','Bus/Coach','Motorcycle','Pedal Cycle','Voi e-bike','Total (veh)','PCU Total','Flow (PCU/h)','Minutes observed','Notes']];
   const ivPcu={};
-  for(const [iv,app] of ks){const cov=cover(sp,VEHST[app],iv,iv+Q);
-    for(const m of ['L','A','R']){const es=ev.filter(e=>e.k==='veh'&&e.app===app&&e.m===m&&e.t>=iv&&e.t<iv+Q);
-      const c=CLASSES.map(cl=>es.filter(e=>e.cls===cl.k).length);const pcu=r1(CLASSES.reduce((a,cl,i)=>a+cl.pcu*c[i],0));
-      const ins=ev.filter(e=>e.st===VEHST[app]&&e.t>=iv&&e.t<iv+Q);
-      ivPcu[fD(iv)+'|'+iv]=(ivPcu[fD(iv)+'|'+iv]||{iv,apps:new Set(),pcu:0,veh:0});const P=ivPcu[fD(iv)+'|'+iv];P.pcu+=pcu;P.veh+=es.length;if(cov>=14)P.apps.add(app);
-      tc.push([fD(iv),'Kings Buildings',uniq(ins.map(e=>e.obs)),uniq(ins.map(e=>e.wx)),fT(iv),fT(iv+Q),APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,pcu,r1(pcu*4),cov,cov<14?`Partial interval: ${cov} of 15 min observed`:''])}}
-  add('Turning_Counts_15min',tc,[11,14,14,14,8,8,8,20,9,20,8,8,9,9,9,10,10,10,10,9,11,10,30]);
+  for(const app of APPS){const stn=VEHST[app];
+    const bl=bins(sp,ev,p,s=>s===stn,e=>e.k==='veh'&&e.app===app);
+    for(const a of bl){const b=binEnd(a,p),len=(b-a)/MIN,cov=cover(sp,stn,a,b);
+      const P=ivPcu[a]=ivPcu[a]||{a,apps:new Set(),pcu:0,veh:0};if(cov>=len-0.5)P.apps.add(app);
+      const ins=ev.filter(e=>e.st===stn&&e.t>=a&&e.t<b);
+      for(const m of ['L','A','R']){const es=ins.filter(e=>e.k==='veh'&&e.m===m);
+        const c=CLASSES.map(cl=>es.filter(e=>e.cls===cl.k).length);const pcu=r1(CLASSES.reduce((s,cl,i)=>s+cl.pcu*c[i],0));
+        P.pcu+=pcu;P.veh+=es.length;
+        tc.push([fD(a),'Kings Buildings',uniq(ins.map(e=>e.obs)),uniq(ins.map(e=>e.wx)),binLabel(a,p),fT(a),fT(b),APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,pcu,r1(pcu*60/len),cov,ivNote(a,cov,len)])}}}
+  tc.splice(1,tc.length-1,...tc.slice(1).sort((x,y)=>(x[5]>y[5]?1:x[5]<y[5]?-1:0)));
+  add('Turning_Counts',tc,[11,14,12,14,9,8,8,8,20,9,20,8,8,9,9,9,10,10,10,10,9,11,10,34]);
   // Approach summary
   const as=[['Approach','Road','Movement','To',...CLASSES.map(c=>c.x),'Total (veh)','PCU Total']];
   for(const app of APPS)for(const m of ['L','A','R']){const es=ev.filter(e=>e.k==='veh'&&e.app===app&&e.m===m);const c=CLASSES.map(cl=>es.filter(e=>e.cls===cl.k).length);
-    as.push([APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,r1(CLASSES.reduce((a,cl,i)=>a+cl.pcu*c[i],0))])}
-  as.push([],['Totals across all observed time. Use Turning_Counts_15min for rates.']);
+    as.push([APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,r1(CLASSES.reduce((s,cl,i)=>s+cl.pcu*c[i],0))])}
+  as.push([],['Totals across all observed time. Use Turning_Counts for rates.']);
   add('Approach_Summary',as,[9,20,9,20,8,8,9,9,9,10,10,10,10,9]);
   // Peak hour
-  const ph=[['Date','Peak hour start','Peak hour end','Vehicles','PCU','Approaches fully observed in all 4 intervals','Note']];
-  const byDay={};for(const v of Object.values(ivPcu))(byDay[fD(v.iv)]=byDay[fD(v.iv)]||[]).push(v);
-  for(const day in byDay){const l=byDay[day].sort((a,b)=>a.iv-b.iv);let best=null;
-    for(let i=0;i<l.length;i++){const w=l.filter(x=>x.iv>=l[i].iv&&x.iv<l[i].iv+4*Q);if(w.length<4)continue;const p=w.reduce((a,x)=>a+x.pcu,0);if(!best||p>best.p)best={p,w,v:w.reduce((a,x)=>a+x.veh,0)}}
-    if(best){const full=APPS.filter(a=>best.w.every(x=>x.apps.has(a)));ph.push([day,fT(best.w[0].iv),fT(best.w[0].iv+4*Q),best.v,r1(best.p),full.map(a=>APP[a].compass).join(', ')||'none',full.length<4?'Not all approaches counted for the full hour, so treat with care':''])}
-    else ph.push([day,'','','','','','Less than an hour of counts'])}
-  add('Peak_Hour',ph,[11,14,13,9,8,30,50]);
+  const ph=[['Peak hour start','Peak hour end','Vehicles','PCU','Approaches fully observed','Note']];
+  if(60%p.iv===0){const k=60/p.iv;const l=Object.values(ivPcu).filter(x=>x.a>=p.t0&&x.a<planEnd(p)).sort((x,y)=>x.a-y.a);let best=null;
+    for(let i=0;i+k<=l.length;i++){const w=l.slice(i,i+k);if(w[k-1].a-w[0].a!==(k-1)*p.iv*MIN)continue;const pc=w.reduce((s,x)=>s+x.pcu,0);if(!best||pc>best.p)best={p:pc,w,v:w.reduce((s,x)=>s+x.veh,0)}}
+    if(best){const full=APPS.filter(a=>best.w.every(x=>x.apps.has(a)));ph.push([fT(best.w[0].a),fT(best.w[0].a+60*MIN),best.v,r1(best.p),full.map(a=>APP[a].compass).join(', ')||'none',full.length<4?'Not all approaches counted for the full hour on this phone. Combine the group files first.':''])}
+    else ph.push(['','','','','','Less than an hour of counts'])}
+  else ph.push(['','','','','',`Peak hour needs an interval that divides into 60 min (this session used ${p.iv} min).`]);
+  add('Peak_Hour',ph,[16,14,9,8,26,60]);
   // Queues
-  const qq=[['Date','Time','Approach','Road','Queue at end of red (veh)','Observer']];
-  for(const e of ev.filter(e=>e.k==='queue'))qq.push([fD(e.t),fT(e.t,1),APP[e.app].compass,APP[e.app].road,e.n,e.obs]);
+  const qq=[['Date','Time','Interval','Approach','Road','Queue at end of red (veh)','Observer']];
+  for(const e of ev.filter(e=>e.k==='queue'))qq.push([fD(e.t),fT(e.t,1),binLabel(binStart(e.t,p),p),APP[e.app].compass,APP[e.app].road,e.n,e.obs]);
   qq.push([],['Approach','Road','Cycles logged','Mean queue','Max queue']);
   for(const a of APPS){const l=ev.filter(e=>e.k==='queue'&&e.app===a).map(e=>e.n);qq.push([APP[a].compass,APP[a].road,l.length,mean(l),l.length?Math.max(...l):''])}
-  add('Queues',qq,[11,10,9,20,22,12]);
+  add('Queues',qq,[11,10,10,9,20,22,12]);
   // Pedestrian counts
-  const pk=new Set();for(const s of sp)if(s.st==='E')for(let iv=qf(s.a);iv<s.b;iv+=Q)pk.add(iv);for(const e of ev)if(e.k==='ped')pk.add(qf(e.t));
-  const pc=[['Date','Interval Start','Interval End','Crossing','Pedestrians','Cyclists','Voi e-bikes','Total','Hourly rate (x4)','Minutes observed','Notes']];
-  for(const iv of [...pk].sort((a,b)=>a-b)){const cov=cover(sp,'E',iv,iv+Q);
-    for(const k of CXS){const es=ev.filter(e=>e.k==='ped'&&e.cx===k&&e.t>=iv&&e.t<iv+Q);const p=es.filter(e=>e.who==='Pedestrian').length,c=es.filter(e=>e.who==='Cyclist').length,v=es.filter(e=>e.who==='Voi').length;
-      pc.push([fD(iv),fT(iv),fT(iv+Q),CROSS[k],p,c,v,es.length,es.length*4,cov,cov<14?`Partial interval: ${cov} of 15 min observed`:''])}}
-  add('Pedestrian_Counts',pc,[11,8,8,24,11,9,10,7,14,10,30]);
+  const pc=[['Date','Interval','Interval Start','Interval End','Crossing','Pedestrians','Cyclists','Voi e-bikes','Total','Hourly rate','Minutes observed','Notes']];
+  for(const a of bins(sp,ev,p,s=>s==='E',e=>e.k==='ped')){const b=binEnd(a,p),len=(b-a)/MIN,cov=cover(sp,'E',a,b);
+    for(const k of CXS){const es=ev.filter(e=>e.k==='ped'&&e.cx===k&&e.t>=a&&e.t<b);const n=w=>es.filter(e=>e.who===w).length;
+      pc.push([fD(a),binLabel(a,p),fT(a),fT(b),CROSS[k],n('Pedestrian'),n('Cyclist'),n('Voi'),es.length,r1(es.length*60/len),cov,ivNote(a,cov,len)])}}
+  add('Pedestrian_Counts',pc,[11,9,8,8,24,11,9,10,7,11,10,34]);
   // Ped delay
-  const pd=[['Date','Arrived at kerb','Stepped off','Crossing','Delay (s)','Observer']];
-  for(const e of ev.filter(e=>e.k==='pdelay'))pd.push([fD(e.t),fT(e.t0,1),fT(e.t,1),CROSS[e.cx],r1((e.t-e.t0)/1000),e.obs]);
+  const pd=[['Date','Arrived at kerb','Stepped off','Interval','Crossing','Delay (s)','Observer']];
+  for(const e of ev.filter(e=>e.k==='pdelay'))pd.push([fD(e.t),fT(e.t0,1),fT(e.t,1),binLabel(binStart(e.t0,p),p),CROSS[e.cx],r1((e.t-e.t0)/1000),e.obs]);
   pd.push([],['Crossing','Samples','Mean delay (s)','Max delay (s)']);
   for(const k of CXS){const l=ev.filter(e=>e.k==='pdelay'&&e.cx===k).map(e=>(e.t-e.t0)/1000);pd.push([CROSS[k],l.length,mean(l),l.length?r1(Math.max(...l)):''])}
-  add('Pedestrian_Delay',pd,[11,14,12,24,10,12]);
+  add('Pedestrian_Delay',pd,[11,14,12,9,24,10,12]);
   // Bus delay
-  const bd=[['Date','Stopped at red','Crossed stop line','Approach','Road','Delay (s)','Observer']];
-  for(const e of ev.filter(e=>e.k==='bus'))bd.push([fD(e.t),fT(e.t0,1),fT(e.t,1),APP[e.app].compass,APP[e.app].road,r1((e.t-e.t0)/1000),e.obs]);
+  const bd=[['Date','Stopped at red','Crossed stop line','Interval','Approach','Road','Delay (s)','Observer']];
+  for(const e of ev.filter(e=>e.k==='bus'))bd.push([fD(e.t),fT(e.t0,1),fT(e.t,1),binLabel(binStart(e.t0,p),p),APP[e.app].compass,APP[e.app].road,r1((e.t-e.t0)/1000),e.obs]);
   bd.push([],['Approach','Road','Buses timed','Mean delay (s)','Max delay (s)']);
   for(const a of APPS){const l=ev.filter(e=>e.k==='bus'&&e.app===a).map(e=>(e.t-e.t0)/1000);bd.push([APP[a].compass,APP[a].road,l.length,mean(l),l.length?r1(Math.max(...l)):''])}
-  add('Bus_Delay',bd,[11,14,16,9,20,10,12]);
+  add('Bus_Delay',bd,[11,14,16,9,9,20,10,12]);
   // Signals
   const sg=ev.filter(e=>e.k==='sig');const sl=[['Date','Signal','Green start','Green end (amber)','Green (s)','Cycle (s) since previous green','Next signal to go green','Gap to next green (s)','Observer']];
   const stats={};
@@ -666,34 +754,39 @@ function buildWB(evIn){
   for(const h of Object.keys(HEADS)){const g=stats[h].g,c=stats[h].c;const mg=mean(g),mc=mean(c);
     ss.push([HEADS[h],g.length,mg,g.length?Math.min(...g):'',g.length?Math.max(...g):'',c.length,mc,c.length?Math.min(...c):'',c.length?Math.max(...c):'',mg!==''&&mc!==''?Math.round(mg/mc*100)/100:''])}
   add('Signal_Summary',ss,[26,12,14,13,13,12,14,13,13,14]);
-  // Notes
   const nt=[['Date','Time','Station','Observer','Note']];for(const e of ev.filter(e=>e.k==='note'))nt.push([fD(e.t),fT(e.t,1),e.st||'',e.obs,e.note]);
   add('Notes',nt,[11,10,8,12,60]);
   add('PCU_Factors',[['Class','PCU factor'],...CLASSES.map(c=>[c.x,c.pcu]),[],['Defaults from the course template. Voi e-bikes use the pedal cycle value.']],[14,10]);
-  add('Raw_Log',rawRows(ev),[12,14,11,9,10,14,12,8,7,9,9,12,11,9,11,7,7,14,11,30]);
+  add('Raw_Log',rawRows(ev,p),[11,9,10,8,7,16,12,9,9,12,11,12,11,7,7,11,14,30,14,14,14,14]);
   return wb;
 }
 
-async function saveFile(name,wb){
-  const buf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
-  if(!window.claude?.use){const url=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+async function saveFile(name,data,mime){
+  const blob=new Blob([data],{type:mime});
+  if(!window.claude?.use){const url=URL.createObjectURL(blob);
     const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);toast('Saved '+name);return true}
   let dl=null;try{dl=await window.claude.use('downloads')}catch(e){dl=null}
-  if(!dl){toast('Saving files is not available here. Use "Copy data as text" instead.');return false}
-  try{await dl.save({filename:name,data:new Blob([buf])});toast('Saved '+name);return true}
+  if(!dl){toast('Saving files isn\'t available here. Use "Copy data as text" instead.');return false}
+  try{await dl.save({filename:name,data:blob});toast('Saved '+name);return true}
   catch(err){toast(err?.code==='declined'?'Save cancelled':'Could not save: '+(err?.message||err?.code||'unknown error'));return false}
 }
-function doExport(){const ev=sesEv();if(!ev.length){toast('Nothing to export yet');return}
-  const name=`KB_${S.session.obs.replace(/\s+/g,'')}_${fISO(S.session.start)}_${fT(S.session.start).replace(':','')}.xlsx`;
-  saveFile(name,buildWB(ev)).then(ok=>{if(ok){savedAt=Date.now();render()}})}
-function copyCSV(){const ev=sesEv();const ws=XLSX.utils.aoa_to_sheet(rawRows(ev));const csv=XLSX.utils.sheet_to_csv(ws);
-  const ta=$('#csvout');ta.hidden=false;ta.value=csv;
+const baseName=()=>`KB_${S.session.obs.replace(/\s+/g,'')}_${fISO(S.session.t0)}_${fT(S.session.t0).replace(':','')}`;
+function csvText(){return XLSX.utils.sheet_to_csv(XLSX.utils.aoa_to_sheet(rawRows(sesEv().slice().sort((a,b)=>a.t-b.t),S.session)),{rawNumbers:true})}
+function doExport(){const ev=sesEv();if(!ev.length){toast('Nothing to save yet');return}
+  const buf=XLSX.write(buildWB(ev,S.session),{type:'array',bookType:'xlsx'});
+  saveFile(baseName()+'.xlsx',buf,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').then(ok=>{if(ok){savedAt=Date.now();render()}})}
+function doCSV(){if(!sesEv().length){toast('Nothing to save yet');return}saveFile(baseName()+'.csv','﻿'+csvText(),'text/csv')}
+function copyCSV(){const csv=csvText();const ta=$('#csvout');ta.hidden=false;ta.value=csv;
   const fallback=()=>{ta.focus();ta.select();toast('Text selected. Copy it and send it to Harry.')};
   try{navigator.clipboard.writeText(csv).then(()=>toast('Copied. Paste it into a message to Harry.'),fallback)}catch(e){fallback()}}
-window.__kb={buildWB,rawRows,get S(){return S}};
+
+/* ---------- boot ---------- */
+if(S.session&&!S.session.t0){S.session.t0=S.session.start;S.session.dur=S.session.dur||120;S.session.iv=S.session.iv||15;save()}
 if(S.screen==='count'&&!STN[S.station])S.screen='pick';
-if(S.screen==='combine')S.screen='setup';
-render();
+if(!['setup','pick','count','end'].includes(S.screen))S.screen='setup';
+if(!draft.time)draft.time=nextFive();
+window.__kb={buildWB,rawRows,planState,get S(){return S}};
+render();tick();
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!window.claude){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 addEventListener('beforeunload',e=>{if(!storageOK&&S.session){e.preventDefault();e.returnValue=''}});
 </script>
