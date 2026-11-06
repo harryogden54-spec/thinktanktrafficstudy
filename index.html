@@ -184,6 +184,15 @@ details[open]{padding-bottom:14px}
 .cxb .n{font-size:26px;font-weight:750}
 .cxb.full{grid-column:1/-1}
 .cxb.toucan{box-shadow:inset 4px 0 0 var(--toucan)}
+.cxb.jay{box-shadow:inset 4px 0 0 var(--stop)}
+.redtog{min-height:54px;width:100%;border-radius:var(--r-s);background:var(--surface);display:flex;align-items:center;gap:12px;padding:8px 14px;text-align:left;font-weight:650;transition:transform .08s,background-color .15s}
+.redtog:active{transform:scale(.97)}
+.redtog .dot{width:18px;height:18px;border-radius:50%;background:var(--stop);flex:none}
+.redtog .lb{flex:1}
+.redtog .n{font-size:22px;font-weight:750}
+.redtog.on{background:var(--stop);color:#fff}
+.redtog.on .dot{background:#fff}
+.pad.armed.red{box-shadow:0 0 0 4px var(--stop)}
 
 textarea{width:100%;box-sizing:border-box;font:inherit;border:0;border-radius:var(--r-s);padding:12px;background:var(--tile);color:var(--ink)}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;font-size:15px;z-index:30;max-width:calc(100% - 32px);text-align:center}
@@ -226,6 +235,8 @@ const CLASSES=[
 const CLS=Object.fromEntries(CLASSES.map(c=>[c.k,c]));
 const CROSS={N:'Mayfield Rd (north)',E:'Esslemont Rd',S:'Mayfield Rd (south)',W:'West Mains Rd (toucan)',D:'Diagonal toucan'};
 const CXS=['N','E','S','W','D'];
+CROSS.X='Away from a crossing';
+const PCX=[...CXS,'X']; // count rows include people crossing away from any crossing
 const HEADS={N:'Mayfield Rd (north)',E:'Esslemont Rd',S:'Mayfield Rd (south)',W:'West Mains Rd',P:'Green man (pedestrian stage)'};
 const CORNER={
   NE:'north-east corner (Mayfield Rd north / Esslemont Rd)',
@@ -249,11 +260,11 @@ const PIN={A:[244,116],B:[244,244],C:[116,244],D:[116,116],E:[74,280],F:[74,80]}
 const STEPS={
  veh:st=>{const a=APP[STN[st].app];return [
    `Stand on the <b>${CORNER[STN[st].corner]}</b>, 1 m back from the kerb, facing the ${a.road} stop line.`,
-   `As each vehicle crosses the stop line, tap the arrow for where it goes. <b>Car is pre-selected</b>; for anything else, tap the vehicle first.`,
+   `As each vehicle crosses the stop line, tap the arrow for where it goes. <b>Car is pre-selected</b>; for anything else, tap the vehicle first. Cyclist going through a red? Tap <b>Cyclist through red</b>, then the arrow.`,
    `When your light turns green, count the queue that was waiting and tap <b>Log queue</b>.`]},
  ped:()=>[
    `Stand on the <b>${CORNER.SW}</b>. You can see all five crossings from there.`,
-   `Tap a crossing each time someone steps onto it. For bikes, tap <b>Cyclist</b> or <b>Voi</b> first.`,
+   `Tap a crossing each time someone steps onto it. For bikes, tap <b>Cyclist</b> or <b>Voi</b> first. Crossed on red? Tap <b>Crossed on red</b> first. Crossed nowhere near a crossing? Tap <b>Away from a crossing</b>.`,
    `When you're free, time someone waiting: <b>Start</b> when they reach the kerb, tap their timer when they step off.`],
  sig:()=>[
    `Stand on the <b>${CORNER.NW}</b>, where you can see every signal.`,
@@ -264,10 +275,10 @@ const MORE={
  veh:st=>{const a=APP[STN[st].app];return `<dl class="brief">
    <dt>Directions from ${a.road}</dt><dd><ul><li>Left to ${a.L}</li><li>Straight on to ${a.A}</li><li>Right to ${a.R}</li></ul></dd>
    <dt>Vehicle types</dt><dd><ul>${CLASSES.map(c=>`<li><b>${c.label}</b>: ${c.hint}</li>`).join('')}</ul></dd>
-   <dt>Tips</dt><dd><ul><li>Count at the stop line, not when they join the queue.</li><li>Unsure of a type? Best guess and keep going.</li><li>Wrong tap? Undo straight away.</li><li>Missing some queue counts is fine.</li></ul></dd>
+   <dt>Tips</dt><dd><ul><li>Count at the stop line, not when they join the queue.</li><li><b>Cyclist through red</b>: they crossed the stop line after the light turned red (amber doesn't count). It picks Cycle for you; tap Voi after it if it's a Voi.</li><li>Unsure of a type? Best guess and keep going.</li><li>Wrong tap? Undo straight away.</li><li>Missing some queue counts is fine.</li></ul></dd>
    <dt>Why it matters</dt><dd>Turning counts give the flow for each movement in PCU/h, which feeds capacity and degree of saturation. Queues are direct evidence of congestion.</dd></dl>`},
  ped:()=>`<dl class="brief">
-   <dt>Tips</dt><dd><ul><li>Count groups one person at a time.</li><li>Only time people who actually wait. About 10 per crossing is plenty.</li><li>People crossing away from a crossing: add a note with where. It shows desire lines.</li></ul></dd>
+   <dt>Tips</dt><dd><ul><li>Count groups one person at a time.</li><li>Only time people who actually wait. About 10 per crossing is plenty.</li><li><b>Crossed on red</b>: they stepped off while the green man (or the toucan) was off. Works with Cyclist and Voi too.</li><li><b>Away from a crossing</b>: anyone crossing the road outside the marked crossings. Add a note with where. It shows desire lines.</li></ul></dd>
    <dt>Why it matters</dt><dd>Demand by crossing shows whether the crossings match where people walk. Wait time is the pedestrian delay KPI.</dd></dl>`,
  sig:()=>`<dl class="brief">
    <dt>Tips</dt><dd><ul><li>For the green man, tap when it comes on and when it goes off.</li><li>Buses that don't stop are counted by stations A to D, so ignore them here.</li><li>Filter arrow or skipped stage? Add a note.</li><li>Catching every change for 10 to 15 cycles beats half-catching many.</li></ul></dd>
@@ -279,7 +290,7 @@ const KEY='kbjc.v1';
 let storageOK=true;
 function load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch(e){storageOK=false;return null}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){storageOK=false}}
-function fresh(){return {session:null,events:[],station:null,sel:'car',who:'Pedestrian',queue:{N:0,E:0,S:0,W:0},timers:[],screen:'setup'}}
+function fresh(){return {session:null,events:[],station:null,sel:'car',red:false,pred:false,who:'Pedestrian',queue:{N:0,E:0,S:0,W:0},timers:[],screen:'setup'}}
 let S=load()||fresh();
 try{localStorage.setItem(KEY+'.t','1');localStorage.removeItem(KEY+'.t')}catch(e){storageOK=false}
 const LAST=KEY+'.last';
@@ -478,6 +489,7 @@ function renderStatus(){const box=$('#status');if(!box)return;const ps=planState
 function countHTML(){const st=S.station,s=STN[st];let body='';
   if(s.role==='veh'){const a=APP[s.app];
    body=`<section class="classes" role="group" aria-label="Vehicle type">${CLASSES.map(c=>`<button class="cls ${c.k==='voi'?'voi':''}" id="cls-${c.k}" data-act="sel" data-k="${c.k}" aria-label="${c.label}: ${c.hint}">${icon(c.k)}<span class="cl">${c.label}</span></button>`).join('')}</section>
+   <button class="redtog" id="redtog" data-act="red" aria-pressed="false"><span class="dot" aria-hidden="true"></span><span class="lb">Cyclist through red</span><span class="n" id="redn">0</span></button>
    <div class="next"><span>Next tap logs: <b id="selname">Car / Taxi</b></span><span class="muted">from ${a.road}</span></div>
    <section class="pad" id="pad">${['L','A','R'].map(m=>`<button class="mv" id="mv-${m}" data-act="veh" data-m="${m}">${ARROW[m]}<span class="mvl">${MV[m]}</span><span class="mvd">to ${a[m]}</span><span class="mvn" id="mvn-${m}">0</span></button>`).join('')}</section>
    <section class="card"><div class="row" style="justify-content:space-between"><h3>Queue at end of red</h3><span class="small muted" id="qlast"></span></div>
@@ -485,8 +497,9 @@ function countHTML(){const st=S.station,s=STN[st];let body='';
     <button class="btn primary block" data-act="qlog">Log queue</button></section>`}
   else if(s.role==='ped'){
    body=`<div class="row" role="group" aria-label="Who is crossing">${['Pedestrian','Cyclist','Voi'].map(w=>`<button class="chip" id="who-${w}" data-act="who" data-v="${w}">${w==='Voi'?'Voi e-bike':w}</button>`).join('')}</div>
+   <button class="redtog" id="predtog" data-act="pred" aria-pressed="false"><span class="dot" aria-hidden="true"></span><span class="lb">Crossed on red</span><span class="n" id="predn">0</span></button>
    <div id="pedmap">${mapSVG('ped')}</div>
-   <div class="cxbtns">${CXS.map(k=>`<button class="cxb ${k==='D'?'full':''} ${k==='W'||k==='D'?'toucan':''}" id="cx-${k}" data-act="ped" data-cx="${k}"><span>${CROSS[k]}</span><span class="n" id="cxn-${k}">0</span></button>`).join('')}</div>
+   <div class="cxbtns">${PCX.map(k=>`<button class="cxb ${k==='D'||k==='X'?'full':''} ${k==='W'||k==='D'?'toucan':''} ${k==='X'?'jay':''}" id="cx-${k}" data-act="ped" data-cx="${k}"><span>${CROSS[k]}</span><span class="n" id="cxn-${k}">0</span></button>`).join('')}</div>
    <section class="card"><h3>Wait timer</h3><p class="small muted">Start when someone reaches the kerb with the green man off. Tap their timer when they step off.</p>
     <div class="row">${CXS.map(k=>`<button class="chip" data-act="pstart" data-cx="${k}">${k==='D'?'Diagonal':CROSS[k].replace(' (toucan)','')}</button>`).join('')}</div>
     <div class="timers" id="timers"></div><p class="small muted" id="pdsum"></p></section>`}
@@ -509,14 +522,18 @@ function refresh(){
   clockUpdate(planState());
   if(s.role==='veh'){
     CLASSES.forEach(c=>$('#cls-'+c.k).classList.toggle('on',S.sel===c.k));
-    $('#selname').textContent=CLS[S.sel].label;$('#pad').classList.toggle('armed',S.sel!=='car');
+    $('#selname').textContent=CLS[S.sel].label+(S.red?' through red':'');$('#pad').classList.toggle('armed',S.sel!=='car'||!!S.red);$('#pad').classList.toggle('red',!!S.red);
+    const rt=$('#redtog');rt.classList.toggle('on',!!S.red);rt.setAttribute('aria-pressed',S.red?'true':'false');
+    $('#redn').textContent=ev.filter(e=>e.k==='veh'&&e.app===s.app&&e.red).length;
     for(const m of ['L','A','R'])$('#mvn-'+m).textContent=ev.filter(e=>e.k==='veh'&&e.app===s.app&&e.m===m).length;
     $('#qn').textContent=S.queue[s.app];
     const ql=ev.filter(e=>e.k==='queue'&&e.app===s.app);
     $('#qlast').textContent=ql.length?`Last ${ql[ql.length-1].n} · ${ql.length} logged`:'';
   }else if(s.role==='ped'){
     ['Pedestrian','Cyclist','Voi'].forEach(w=>$('#who-'+w).classList.toggle('on',S.who===w));
-    const c=pedCounts();CXS.forEach(k=>$('#cxn-'+k).textContent=c[k]||0);
+    const c=pedCounts();PCX.forEach(k=>$('#cxn-'+k).textContent=c[k]||0);
+    const pt=$('#predtog');pt.classList.toggle('on',!!S.pred);pt.setAttribute('aria-pressed',S.pred?'true':'false');
+    $('#predn').textContent=ev.filter(e=>e.k==='ped'&&e.red).length;
     $('#pedmap').innerHTML=mapSVG('ped');
     const pd=ev.filter(e=>e.k==='pdelay');
     $('#pdsum').textContent=pd.length?`${pd.length} waits timed · mean ${r1(pd.reduce((a,e)=>a+(e.t-e.t0),0)/pd.length/1000)} s`:'';
@@ -547,8 +564,10 @@ function renderTimers(){const box=$('#timers');if(!box)return;const now=Date.now
 function endHTML(){
   const ev=sesEv();const by=k=>ev.filter(e=>e.k===k);const rows=[];
   for(const a of APPS){const n=by('veh').filter(e=>e.app===a).length;if(n)rows.push([`Vehicles from ${APP[a].road}`,n])}
+  if(by('veh').some(e=>e.red))rows.push(['Through a red light (vehicle stations)',by('veh').filter(e=>e.red).length]);
   if(by('queue').length)rows.push(['Queues logged',by('queue').length]);
-  for(const k of CXS){const n=by('ped').filter(e=>e.cx===k).length;if(n)rows.push([`Crossing: ${CROSS[k]}`,n])}
+  for(const k of PCX){const n=by('ped').filter(e=>e.cx===k).length;if(n)rows.push([`Crossing: ${CROSS[k]}`,n])}
+  if(by('ped').some(e=>e.red))rows.push(['Crossed on red',by('ped').filter(e=>e.red).length]);
   if(by('pdelay').length)rows.push(['Wait times',by('pdelay').length]);
   if(by('sig').length)rows.push(['Signal changes',by('sig').length]);
   if(by('bus').length)rows.push(['Bus delays',by('bus').length]);
@@ -593,16 +612,18 @@ function act(a,d,el){
   case 'closeBrief':brief=null;renderSheet();if(S.screen==='pick')render();break;
   case 'go':{const st=d.st;brief=null;unlockAudio();
     if(S.station!==st){if(S.station)log('off',{st:S.station});S.station=st;log('on',{st})}
-    S.sel='car';S.screen='count';save();render();window.scrollTo(0,0);break}
+    S.sel='car';S.red=false;S.pred=false;S.screen='count';save();render();window.scrollTo(0,0);break}
   case 'switch':confirmDiscard=false;S.screen='pick';save();render();window.scrollTo(0,0);break;
   case 'backCount':S.screen='count';render();break;
   case 'sel':S.sel=d.k;save();refresh();break;
-  case 'veh':{const s=STN[S.station];const c=S.sel;log('veh',{app:s.app,m:d.m,cls:c});S.sel='car';save();flash(el);buzz();refresh();break}
+  case 'red':S.red=!S.red;if(S.red&&!['cyc','voi'].includes(S.sel))S.sel='cyc';else if(!S.red&&S.sel==='cyc')S.sel='car';save();refresh();break;
+  case 'pred':S.pred=!S.pred;save();refresh();break;
+  case 'veh':{const s=STN[S.station];const c=S.sel;log('veh',{app:s.app,m:d.m,cls:c,red:!!S.red});S.sel='car';S.red=false;save();flash(el);buzz();refresh();break}
   case 'qp':S.queue[STN[S.station].app]++;save();refresh();break;
   case 'qm':{const a2=STN[S.station].app;S.queue[a2]=Math.max(0,S.queue[a2]-1);save();refresh();break}
   case 'qlog':{const a2=STN[S.station].app;log('queue',{app:a2,n:S.queue[a2]});toast(`Queue of ${S.queue[a2]} logged`);S.queue[a2]=0;save();refresh();break}
   case 'who':S.who=d.v;save();refresh();break;
-  case 'ped':{log('ped',{cx:d.cx,who:S.who});S.who='Pedestrian';save();flash($('#cx-'+d.cx));buzz();refresh();break}
+  case 'ped':{log('ped',{cx:d.cx,who:S.who,red:d.cx!=='X'&&!!S.pred});S.who='Pedestrian';S.pred=false;save();flash($('#cx-'+d.cx));buzz();refresh();break}
   case 'pstart':S.timers.push({id:uid(),k:'pdelay',cx:d.cx,t0:Date.now(),ses:S.session.id,st:S.station});save();refresh();break;
   case 'bstart':S.timers.push({id:uid(),k:'bus',app:d.app,t0:Date.now(),ses:S.session.id,st:S.station});save();refresh();break;
   case 'tstop':{const t=S.timers.find(x=>x.id===d.id);if(!t)break;S.timers=S.timers.filter(x=>x.id!==d.id);
@@ -628,9 +649,9 @@ function act(a,d,el){
   }
 }
 function describe(e){
-  if(e.k==='veh')return `${CLS[e.cls].label} → ${APP[e.app][e.m]}`;
+  if(e.k==='veh')return `${CLS[e.cls].label}${e.red?' through red':''} → ${APP[e.app][e.m]}`;
   if(e.k==='queue')return `queue of ${e.n}`;
-  if(e.k==='ped')return `${e.who} on ${CROSS[e.cx]}`;
+  if(e.k==='ped')return e.cx==='X'?`${e.who} away from a crossing`:`${e.who} on ${CROSS[e.cx]}${e.red?' (on red)':''}`;
   if(e.k==='sig')return `${HEADS[e.h]} ${e.ch==='G'?'green':'amber'}`;
   if(e.k==='bus')return 'bus delay';
   if(e.k==='pdelay')return 'wait time';
@@ -640,9 +661,9 @@ setInterval(tick,1000);
 
 /* ---------- export ---------- */
 const RAW=[['Date',null],['Time',null],['Observer','obs'],['Station','st'],['Kind','k'],['In session window',null],['Interval',null],
-  ['Approach','app'],['Movement','m'],['Vehicle class','cls'],['Queue (veh)','n'],['Crossing','cx'],['User type','who'],['Signal','h'],['Change','ch'],['Duration (s)',null],['Weather','wx'],['Note','note'],['Epoch ms','t'],['Start epoch ms','t0'],['ID','id'],['Session','ses']];
+  ['Approach','app'],['Movement','m'],['Vehicle class','cls'],['Queue (veh)','n'],['Crossing','cx'],['User type','who'],['Signal','h'],['Change','ch'],['On red',null],['Duration (s)',null],['Weather','wx'],['Note','note'],['Epoch ms','t'],['Start epoch ms','t0'],['ID','id'],['Session','ses']];
 function rawRows(ev,p){return [RAW.map(r=>r[0]),...ev.map(e=>RAW.map(([h,f])=>{
-  if(h==='Date')return fD(e.t);if(h==='Time')return fT(e.t,1);if(h==='Duration (s)')return e.t0?r1((e.t-e.t0)/1000):'';
+  if(h==='Date')return fD(e.t);if(h==='Time')return fT(e.t,1);if(h==='Duration (s)')return e.t0?r1((e.t-e.t0)/1000):'';if(h==='On red')return e.red?'Yes':'';
   if(h==='In session window')return windowTag(e.t,p);if(h==='Interval')return binLabel(binStart(e.t,p),p);
   const v=e[f];return v===undefined||v===null?'':v}))]}
 
@@ -670,7 +691,7 @@ function buildWB(evIn,p){
   add('Summary',sum,[34,40,14]);
   const ivNote=(a,cov,len)=>[binLabel(a,p)==='Before start'||binLabel(a,p)==='After end'?'Outside planned session':'',cov<len-0.5?`Partial: ${cov} of ${len} min observed`:''].filter(Boolean).join('; ');
   // Turning counts
-  const tc=[['Date','Site/Junction','Observer','Weather','Interval','Interval Start','Interval End','Approach','Road','Movement','To','Car/Taxi','LGV/Van','HGV Rigid','HGV Artic','Bus/Coach','Motorcycle','Pedal Cycle','Voi e-bike','Total (veh)','PCU Total','Flow (PCU/h)','Minutes observed','Notes']];
+  const tc=[['Date','Site/Junction','Observer','Weather','Interval','Interval Start','Interval End','Approach','Road','Movement','To','Car/Taxi','LGV/Van','HGV Rigid','HGV Artic','Bus/Coach','Motorcycle','Pedal Cycle','Voi e-bike','Total (veh)','PCU Total','Flow (PCU/h)','Minutes observed','Through red','Notes']];
   const ivPcu={};
   for(const app of APPS){const stn=VEHST[app];
     const bl=bins(sp,ev,p,s=>s===stn,e=>e.k==='veh'&&e.app===app);
@@ -680,15 +701,15 @@ function buildWB(evIn,p){
       for(const m of ['L','A','R']){const es=ins.filter(e=>e.k==='veh'&&e.m===m);
         const c=CLASSES.map(cl=>es.filter(e=>e.cls===cl.k).length);const pcu=r1(CLASSES.reduce((s,cl,i)=>s+cl.pcu*c[i],0));
         P.pcu+=pcu;P.veh+=es.length;
-        tc.push([fD(a),'Kings Buildings',uniq(ins.map(e=>e.obs)),uniq(ins.map(e=>e.wx)),binLabel(a,p),fT(a),fT(b),APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,pcu,r1(pcu*60/len),cov,ivNote(a,cov,len)])}}}
+        tc.push([fD(a),'Kings Buildings',uniq(ins.map(e=>e.obs)),uniq(ins.map(e=>e.wx)),binLabel(a,p),fT(a),fT(b),APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,pcu,r1(pcu*60/len),cov,es.filter(e=>e.red).length,ivNote(a,cov,len)])}}}
   tc.splice(1,tc.length-1,...tc.slice(1).sort((x,y)=>(x[5]>y[5]?1:x[5]<y[5]?-1:0)));
-  add('Turning_Counts',tc,[11,14,12,14,9,8,8,8,20,9,20,8,8,9,9,9,10,10,10,10,9,11,10,34]);
+  add('Turning_Counts',tc,[11,14,12,14,9,8,8,8,20,9,20,8,8,9,9,9,10,10,10,10,9,11,10,11,34]);
   // Approach summary
-  const as=[['Approach','Road','Movement','To',...CLASSES.map(c=>c.x),'Total (veh)','PCU Total']];
+  const as=[['Approach','Road','Movement','To',...CLASSES.map(c=>c.x),'Total (veh)','PCU Total','Through red']];
   for(const app of APPS)for(const m of ['L','A','R']){const es=ev.filter(e=>e.k==='veh'&&e.app===app&&e.m===m);const c=CLASSES.map(cl=>es.filter(e=>e.cls===cl.k).length);
-    as.push([APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,r1(CLASSES.reduce((s,cl,i)=>s+cl.pcu*c[i],0))])}
+    as.push([APP[app].compass,APP[app].road,MVX[m],APP[app][m],...c,es.length,r1(CLASSES.reduce((s,cl,i)=>s+cl.pcu*c[i],0)),es.filter(e=>e.red).length])}
   as.push([],['Totals across all observed time. Use Turning_Counts for rates.']);
-  add('Approach_Summary',as,[9,20,9,20,8,8,9,9,9,10,10,10,10,9]);
+  add('Approach_Summary',as,[9,20,9,20,8,8,9,9,9,10,10,10,10,9,11]);
   // Peak hour
   const ph=[['Peak hour start','Peak hour end','Vehicles','PCU','Approaches fully observed','Note']];
   if(60%p.iv===0){const k=60/p.iv;const l=Object.values(ivPcu).filter(x=>x.a>=p.t0&&x.a<planEnd(p)).sort((x,y)=>x.a-y.a);let best=null;
@@ -704,11 +725,24 @@ function buildWB(evIn,p){
   for(const a of APPS){const l=ev.filter(e=>e.k==='queue'&&e.app===a).map(e=>e.n);qq.push([APP[a].compass,APP[a].road,l.length,mean(l),l.length?Math.max(...l):''])}
   add('Queues',qq,[11,10,10,9,20,22,12]);
   // Pedestrian counts
-  const pc=[['Date','Interval','Interval Start','Interval End','Crossing','Pedestrians','Cyclists','Voi e-bikes','Total','Hourly rate','Minutes observed','Notes']];
+  const pc=[['Date','Interval','Interval Start','Interval End','Crossing','Pedestrians','Cyclists','Voi e-bikes','Total','On red','Hourly rate','Minutes observed','Notes']];
   for(const a of bins(sp,ev,p,s=>s==='E',e=>e.k==='ped')){const b=binEnd(a,p),len=(b-a)/MIN,cov=cover(sp,'E',a,b);
-    for(const k of CXS){const es=ev.filter(e=>e.k==='ped'&&e.cx===k&&e.t>=a&&e.t<b);const n=w=>es.filter(e=>e.who===w).length;
-      pc.push([fD(a),binLabel(a,p),fT(a),fT(b),CROSS[k],n('Pedestrian'),n('Cyclist'),n('Voi'),es.length,r1(es.length*60/len),cov,ivNote(a,cov,len)])}}
-  add('Pedestrian_Counts',pc,[11,9,8,8,24,11,9,10,7,11,10,34]);
+    for(const k of PCX){const es=ev.filter(e=>e.k==='ped'&&e.cx===k&&e.t>=a&&e.t<b);const n=w=>es.filter(e=>e.who===w).length;
+      pc.push([fD(a),binLabel(a,p),fT(a),fT(b),CROSS[k],n('Pedestrian'),n('Cyclist'),n('Voi'),es.length,k==='X'?'':es.filter(e=>e.red).length,r1(es.length*60/len),cov,ivNote(a,cov,len)])}}
+  add('Pedestrian_Counts',pc,[11,9,8,8,24,11,9,10,7,8,11,10,34]);
+  // Red-light running and crossings away from a crossing
+  const pct=(a,b)=>b?Math.round(a/b*1000)/10:'';
+  const rl=[['Vehicle stations: through a red light'],['Approach','Road','Cyclists on red','Voi on red','Other vehicles on red','Total on red','Bikes counted','% of bikes on red']];
+  for(const a of APPS){const v=ev.filter(e=>e.k==='veh'&&e.app===a);const r=v.filter(e=>e.red);const bikes=v.filter(e=>e.cls==='cyc'||e.cls==='voi');
+    const rc=r.filter(e=>e.cls==='cyc').length,rv=r.filter(e=>e.cls==='voi').length;
+    rl.push([APP[a].compass,APP[a].road,rc,rv,r.length-rc-rv,r.length,bikes.length,pct(rc+rv,bikes.length)])}
+  rl.push([],['Pedestrian station: crossed on red'],['Crossing','Pedestrians on red','Cyclists on red','Voi on red','Total on red','Total crossing','% on red']);
+  for(const k of CXS){const l=ev.filter(e=>e.k==='ped'&&e.cx===k);const r=l.filter(e=>e.red);const n=w=>r.filter(e=>e.who===w).length;
+    rl.push([CROSS[k],n('Pedestrian'),n('Cyclist'),n('Voi'),r.length,l.length,pct(r.length,l.length)])}
+  {const x=ev.filter(e=>e.k==='ped'&&e.cx==='X');const n=w=>x.filter(e=>e.who===w).length;
+   rl.push([],['Away from a crossing','Pedestrians','Cyclists','Voi','Total'],['All roads',n('Pedestrian'),n('Cyclist'),n('Voi'),x.length])}
+  rl.push([],['On red = stepped off or crossed the stop line after the signal turned red (green man off for pedestrians). See Notes for where people crossed away from a crossing.']);
+  add('Red_Light',rl,[24,20,15,12,20,13,13,16]);
   // Ped delay
   const pd=[['Date','Arrived at kerb','Stepped off','Interval','Crossing','Delay (s)','Observer']];
   for(const e of ev.filter(e=>e.k==='pdelay'))pd.push([fD(e.t),fT(e.t0,1),fT(e.t,1),binLabel(binStart(e.t0,p),p),CROSS[e.cx],r1((e.t-e.t0)/1000),e.obs]);
@@ -739,7 +773,7 @@ function buildWB(evIn,p){
   const nt=[['Date','Time','Station','Observer','Note']];for(const e of ev.filter(e=>e.k==='note'))nt.push([fD(e.t),fT(e.t,1),e.st||'',e.obs,e.note]);
   add('Notes',nt,[11,10,8,12,60]);
   add('PCU_Factors',[['Class','PCU factor'],...CLASSES.map(c=>[c.x,c.pcu]),[],['Defaults from the course template. Voi e-bikes use the pedal cycle value.']],[14,10]);
-  add('Raw_Log',rawRows(ev,p),[11,9,10,8,7,16,12,9,9,12,11,12,11,7,7,11,14,30,14,14,14,14]);
+  add('Raw_Log',rawRows(ev,p),[11,9,10,8,7,16,12,9,9,12,11,12,11,7,7,8,11,14,30,14,14,14,14]);
   return wb;
 }
 
