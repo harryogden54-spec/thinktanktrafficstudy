@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>KB Junction Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@500;700;800&family=Overpass+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: map-first tool. Bird's-eye canvas on the left, control + evidence column on the right; stacks on phones. */
+:root{
+  --bg:#F3F4F1; --surface:#FFFFFF; --tile:#ECEEE9; --line:#DCDFD8; --ink:#16191C; --muted:#5F676E;
+  --marking:#F2C200; --on-marking:#1B1700; --go:#1C8A4A; --stop:#C7362C; --amber:#D98E07;
+  --verge:#D7DECF; --pave:#C3C6BF; --asphalt:#4B5056; --asphalt-line:#F1F1EC; --build:#B9BDB4; --build-kb:#AEB7C2; --map-label:#2A2F33;
+  --ped:#1E88C7; --cyc:#2FA35B; --voi:#DB4D63;
+  --stA:#3D7DD8; --stB:#1C8A4A; --stC:#C9711A; --stD:#8C5BD1;
+  --f-display:"Overpass","Segoe UI",system-ui,sans-serif; --f-body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --f-num:"Overpass Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --r:14px; --r-s:9px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1113; --surface:#181B1E; --tile:#22262A; --line:#2E3338; --ink:#ECEEEF; --muted:#9AA2A9;
+  --verge:#18201B; --pave:#2B2F33; --asphalt:#3A3F45; --asphalt-line:#D9DAD4; --build:#23282C; --build-kb:#263240; --map-label:#C9CED2;
+  --ped:#5BC0EB; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1113; --surface:#181B1E; --tile:#22262A; --line:#2E3338; --ink:#ECEEEF; --muted:#9AA2A9;
+  --verge:#18201B; --pave:#2B2F33; --asphalt:#3A3F45; --asphalt-line:#D9DAD4; --build:#23282C; --build-kb:#263240; --map-label:#C9CED2;
+  --ped:#5BC0EB; color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:14px;line-height:1.45}
+.wrap{max-width:1380px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 28px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(22px,3vw,30px);letter-spacing:-.01em;margin:0;text-wrap:balance;display:flex;align-items:center;gap:10px}
+h1 .plate{background:var(--marking);color:var(--on-marking);font-size:.55em;padding:3px 8px 1px;border-radius:5px;letter-spacing:.04em}
+.sub{color:var(--muted);margin:2px 0 0;max-width:70ch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.mapbox{position:relative;background:var(--verge);border-radius:var(--r);overflow:hidden;aspect-ratio:1/1;max-height:calc(100vh - 120px);width:100%;max-width:100%}
+@media (max-width:980px){.mapbox{max-height:none}}
+canvas{display:block;width:100%;height:100%}
+.hud{position:absolute;left:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.chip{background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(4px);border-radius:8px;padding:5px 9px;font-family:var(--f-num);font-size:12px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.chip b{font-weight:600}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:4px}
+.zoom button{width:34px;height:34px;font-size:18px;padding:0}
+.legend{position:absolute;left:10px;bottom:10px;right:10px;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--ink);pointer-events:none}
+.legend span{display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,var(--surface) 80%,transparent);padding:2px 7px;border-radius:6px}
+.legend i{display:inline-block;width:14px;height:7px;border-radius:2px}
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--surface);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card h2{font-family:var(--f-display);font-weight:700;font-size:13px;letter-spacing:.07em;text-transform:uppercase;margin:0;color:var(--muted)}
+.sess{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+@media (max-width:420px){.sess{grid-template-columns:repeat(3,1fr)}}
+button{font:inherit;color:var(--ink);background:var(--tile);border:0;border-radius:var(--r-s);padding:7px 10px;cursor:pointer}
+button:hover{background:color-mix(in srgb,var(--tile) 80%,var(--ink) 8%)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--marking);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--marking);color:var(--on-marking)}
+.sess button{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:7px 8px;text-align:left;line-height:1.2}
+.sess button b{font-weight:600;font-size:13px;white-space:nowrap}
+.sess button small{white-space:nowrap}
+.sess button small{font-size:11px;opacity:.75}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.row .sp{flex:1}
+.play{min-width:70px;font-weight:600}
+.speed{gap:4px}.speed button{font-family:var(--f-num);font-size:12.5px;padding:7px 8px}
+.timeline{position:relative;height:30px;border-radius:7px;overflow:hidden;display:flex;background:var(--tile)}
+.timeline div{height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--f-num);font-size:11.5px;font-weight:600;color:#fff;min-width:0;overflow:hidden;white-space:nowrap}
+.timeline .ig{background:repeating-linear-gradient(135deg,var(--tile) 0 4px,color-mix(in srgb,var(--tile) 70%,var(--ink) 15%) 4px 8px)}
+.needle{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);box-shadow:0 0 0 1px var(--surface)}
+.stagekey{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;font-size:12.5px}
+.stagekey i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-top:4px}
+.slider{display:grid;grid-template-columns:minmax(0,1fr) 54px;gap:2px 10px;align-items:center}
+.slider label{font-size:12.5px;display:flex;align-items:center;gap:6px}
+.slider label i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.slider output{font-family:var(--f-num);font-variant-numeric:tabular-nums;text-align:right;font-size:13px}
+.slider input{grid-column:1/-1;width:100%;accent-color:var(--marking)}
+.cyc{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+.cyc b{font-family:var(--f-num);color:var(--ink);font-size:15px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 4px;text-align:right;white-space:nowrap}
+th{font-weight:500;color:var(--muted);font-size:11.5px}
+th:first-child,td:first-child{text-align:left}
+thead tr:first-child th{border-bottom:0;padding-bottom:0}
+tbody tr{border-top:1px solid var(--line)}
+td.n{font-family:var(--f-num)}
+td.sim{font-weight:600}
+.dev-ok{color:var(--go)} .dev-hi{color:var(--stop)} .dev-lo{color:var(--stA)}
+.note{font-size:12px;color:var(--muted);margin:0}
+.notes{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:5px;margin:0;padding-left:18px}
+.statsince{font-family:var(--f-num);font-size:11.5px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="plate">KB</span>Junction Simulator</h1>
+      <p class="sub">Mayfield Rd / West Mains Rd / Esslemont Rd. Arrivals, turning splits and vehicle mix are taken from the turning counts; signal stages and greens from the signal log. Compare the simulated queues and delays with what the group recorded.</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="mapbox" id="mapbox">
+      <canvas id="cv" aria-label="Bird's-eye animation of the junction"></canvas>
+      <div class="hud">
+        <div class="chip" id="hudClock">00:00</div>
+        <div class="chip" id="hudStage">Stage A</div>
+      </div>
+      <div class="zoom">
+        <button id="zin" aria-label="Zoom in">+</button>
+        <button id="zout" aria-label="Zoom out">−</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:#9AA3AD"></i>Car</span>
+        <span><i style="background:#F4F4F0;outline:1px solid #888"></i>Van</span>
+        <span><i style="background:#E39B2D"></i>HGV</span>
+        <span><i style="background:#8C1D2B"></i>Bus</span>
+        <span><i style="background:var(--cyc)"></i>Cycle</span>
+        <span><i style="background:var(--voi)"></i>Voi</span>
+        <span><i style="background:var(--ped);border-radius:50%;width:8px;height:8px"></i>Pedestrian</span>
+      </div>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <h2>Session</h2>
+        <div class="sess" id="sess"></div>
+        <div class="row">
+          <button class="play" id="play">Pause</button>
+          <div class="row speed" id="speed"></div>
+          <span class="sp"></span>
+          <button id="restart">Restart</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Signal plan</h2>
+        <div class="timeline" id="tl"><div class="needle" id="needle"></div></div>
+        <div id="sliders"></div>
+        <div class="slider">
+          <label for="dem">Traffic demand</label><output id="demOut">100%</output>
+          <input type="range" id="dem" min="50" max="150" step="5" value="100">
+        </div>
+        <div class="cyc"><span>Cycle time (incl. intergreens)</span><span><b id="cycSim">0 s</b> &nbsp;observed <span id="cycObs">0 s</span></span></div>
+        <div class="row"><button id="resetPlan">Reset to observed timings</button></div>
+      </section>
+
+      <section class="card">
+        <h2>Simulated vs observed</h2>
+        <div class="statsince" id="since">Collecting…</div>
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr><th></th><th colspan="2">Queue (veh)</th><th colspan="2">Bus delay (s)</th><th colspan="2">Flow (PCU/h)</th><th>Delay</th></tr>
+              <tr><th>Approach</th><th>Obs</th><th>Sim</th><th>Obs</th><th>Sim</th><th>Obs</th><th>Sim</th><th>s/veh</th></tr>
+            </thead>
+            <tbody id="stats"></tbody>
+          </table>
+        </div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th>Crossing</th><th>Peds/h</th><th>Wait obs (s)</th><th>Wait sim (s)</th></tr></thead>
+            <tbody id="pstats"></tbody>
+          </table>
+        </div>
+        <p class="note">Queue is vehicles waiting when the approach turns green (end of red). Flow appears after 5 simulated minutes. Bus delay is time from stopping at red to crossing the stop line, as recorded. Delay s/veh is the simulated average extra time per vehicle compared with an empty junction. Observed pedestrian waits are pooled across all sessions (small sample). Stats restart whenever you change the plan or demand.</p>
+      </section>
+
+      <section class="card">
+        <h2>How the model works</h2>
+        <ul class="notes">
+          <li>Four stages repeat each cycle: <b>A</b> West Mains Rd plus the Mayfield Rd (south) left-turn lane, <b>B</b> Mayfield Rd north and south, <b>C</b> Esslemont Rd, <b>D</b> all-red pedestrian stage with every crossing on green man. Intergreens are the median gaps in your signal log.</li>
+          <li>Vehicles arrive at random at the counted rate for each turn and class, then follow the car in front with a standard car-following model at 20 mph. That gives a saturation flow of roughly 1,900 veh/h per lane for straight-ahead traffic, a bit less for turns.</li>
+          <li>Right turners from Mayfield Rd wait in the junction for a 4.5 s gap in oncoming traffic, so they hold up the cars behind them.</li>
+          <li>Cyclists and Voi riders use the cycle lane and advanced stop line. Pedestrians cross only on the green man. Nobody runs a red.</li>
+          <li>Layout traced from the council signals drawing (KB1A) and current aerial imagery. Lane widths 3.2 m.</li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = {"sessions": {"2": {"day": "Wed 28 Oct", "time": "AM peak 08:28", "flows": {"N": {"L": {"car": 38, "van": 2, "hgv": 0, "artic": 0, "bus": 4, "moto": 0, "cycle": 2, "voi": 0}, "T": {"car": 168, "van": 18, "hgv": 2, "artic": 0, "bus": 0, "moto": 0, "cycle": 28, "voi": 2}, "R": {"car": 2, "van": 0, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 30, "voi": 10}}, "E": {"L": {"car": 4, "van": 4, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 204, "van": 42, "hgv": 6, "artic": 0, "bus": 6, "moto": 2, "cycle": 10, "voi": 0}, "R": {"car": 16, "van": 4, "hgv": 0, "artic": 0, "bus": 6, "moto": 0, "cycle": 0, "voi": 0}}, "S": {"L": {"car": 208, "van": 32, "hgv": 2, "artic": 4, "bus": 0, "moto": 2, "cycle": 6, "voi": 0}, "T": {"car": 186, "van": 48, "hgv": 4, "artic": 0, "bus": 4, "moto": 0, "cycle": 32, "voi": 2}, "R": {"car": 6, "van": 2, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}}, "W": {"L": {"car": 22, "van": 6, "hgv": 0, "artic": 0, "bus": 2, "moto": 0, "cycle": 4, "voi": 0}, "T": {"car": 172, "van": 28, "hgv": 2, "artic": 0, "bus": 6, "moto": 2, "cycle": 4, "voi": 0}, "R": {"car": 80, "van": 16, "hgv": 4, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 2}}}, "plan": {"A": 36, "B": 41, "C": 29, "D": 8}, "obsCycle": 146, "obs": {"queue": {"E": 13.2, "N": 8.2, "S": 10.0, "W": 9.4}, "bus": {"E": 141, "N": 70, "W": 58}, "busAll": 107, "pcuh": {"E": 315, "N": 255, "S": 524, "W": 357}}, "peds": {"N": 10, "E": 12, "S": 210, "W": 338, "X": 610}}, "3": {"day": "Fri 30 Oct", "time": "Lunch 12:30", "flows": {"N": {"L": {"car": 32, "van": 0, "hgv": 0, "artic": 0, "bus": 6, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 142, "van": 30, "hgv": 6, "artic": 2, "bus": 2, "moto": 2, "cycle": 6, "voi": 0}, "R": {"car": 0, "van": 0, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 4, "voi": 4}}, "E": {"L": {"car": 4, "van": 0, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 168, "van": 42, "hgv": 6, "artic": 0, "bus": 4, "moto": 0, "cycle": 2, "voi": 0}, "R": {"car": 18, "van": 2, "hgv": 0, "artic": 0, "bus": 6, "moto": 0, "cycle": 2, "voi": 0}}, "S": {"L": {"car": 134, "van": 8, "hgv": 2, "artic": 2, "bus": 0, "moto": 0, "cycle": 2, "voi": 0}, "T": {"car": 154, "van": 34, "hgv": 2, "artic": 2, "bus": 4, "moto": 0, "cycle": 6, "voi": 4}, "R": {"car": 12, "van": 2, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}}, "W": {"L": {"car": 34, "van": 12, "hgv": 0, "artic": 0, "bus": 4, "moto": 0, "cycle": 0, "voi": 2}, "T": {"car": 138, "van": 14, "hgv": 2, "artic": 0, "bus": 2, "moto": 2, "cycle": 2, "voi": 0}, "R": {"car": 130, "van": 22, "hgv": 0, "artic": 0, "bus": 0, "moto": 2, "cycle": 2, "voi": 0}}}, "plan": {"A": 32, "B": 33, "C": 25, "D": 12}, "obsCycle": 126, "obs": {"queue": {"E": 7.1, "N": 6.6, "S": 8.0, "W": 9.0}, "bus": {"E": 36, "N": 75, "S": 35, "W": 65}, "busAll": 53, "pcuh": {"E": 269, "N": 243, "S": 375, "W": 370}}, "peds": {"N": 14, "E": 4, "S": 58, "W": 92, "X": 96}}, "4": {"day": "Wed 4 Nov", "time": "PM peak 16:30", "flows": {"N": {"L": {"car": 22, "van": 2, "hgv": 0, "artic": 0, "bus": 4, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 242, "van": 26, "hgv": 0, "artic": 0, "bus": 4, "moto": 4, "cycle": 10, "voi": 0}, "R": {"car": 0, "van": 0, "hgv": 0, "artic": 0, "bus": 0, "moto": 4, "cycle": 0, "voi": 0}}, "E": {"L": {"car": 4, "van": 2, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 260, "van": 22, "hgv": 2, "artic": 0, "bus": 2, "moto": 0, "cycle": 4, "voi": 0}, "R": {"car": 30, "van": 4, "hgv": 0, "artic": 0, "bus": 6, "moto": 0, "cycle": 0, "voi": 0}}, "S": {"L": {"car": 114, "van": 10, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 2, "voi": 0}, "T": {"car": 136, "van": 16, "hgv": 0, "artic": 0, "bus": 2, "moto": 0, "cycle": 8, "voi": 4}, "R": {"car": 18, "van": 2, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 2, "voi": 0}}, "W": {"L": {"car": 42, "van": 8, "hgv": 0, "artic": 0, "bus": 2, "moto": 0, "cycle": 2, "voi": 2}, "T": {"car": 156, "van": 26, "hgv": 2, "artic": 0, "bus": 4, "moto": 0, "cycle": 6, "voi": 0}, "R": {"car": 208, "van": 38, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 2, "voi": 0}}}, "plan": {"A": 37, "B": 35, "C": 27, "D": 7}, "obsCycle": 138, "obs": {"queue": {"E": 11.8, "N": 8.7, "S": 5.9, "W": 12.0}, "bus": {"E": 61, "N": 70, "S": 15, "W": 90}, "busAll": 65, "pcuh": {"E": 343, "N": 314, "S": 303, "W": 497}}, "peds": {"N": 18, "E": 4, "S": 56, "W": 158, "X": 88}}, "5": {"day": "Sat 7 Nov", "time": "Sat 09:50", "flows": {"N": {"L": {"car": 38, "van": 0, "hgv": 0, "artic": 0, "bus": 4, "moto": 0, "cycle": 2, "voi": 0}, "T": {"car": 164, "van": 4, "hgv": 4, "artic": 0, "bus": 2, "moto": 0, "cycle": 2, "voi": 6}, "R": {"car": 0, "van": 0, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 2, "voi": 0}}, "E": {"L": {"car": 6, "van": 0, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 172, "van": 18, "hgv": 0, "artic": 0, "bus": 4, "moto": 0, "cycle": 0, "voi": 2}, "R": {"car": 28, "van": 0, "hgv": 0, "artic": 0, "bus": 6, "moto": 0, "cycle": 0, "voi": 0}}, "S": {"L": {"car": 114, "van": 10, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 6, "voi": 0}, "T": {"car": 132, "van": 14, "hgv": 2, "artic": 0, "bus": 2, "moto": 2, "cycle": 8, "voi": 0}, "R": {"car": 6, "van": 0, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}}, "W": {"L": {"car": 10, "van": 0, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 152, "van": 10, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}, "R": {"car": 72, "van": 4, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}}}, "plan": {"A": 35, "B": 33, "C": 25, "D": 9}, "obsCycle": 131, "obs": {"queue": {"E": 7.1, "N": 7.6, "S": 6.5, "W": 5.6}, "bus": {"E": 78, "N": 66, "S": 25, "W": 67}, "busAll": 59, "pcuh": {"E": 244, "N": 230, "S": 288, "W": 248}}, "peds": {"N": 22, "E": 24, "S": 44, "W": 40, "X": 42}}, "6": {"day": "Mon 9 Nov", "time": "Lunch 12:20", "flows": {"N": {"L": {"car": 26, "van": 4, "hgv": 0, "artic": 0, "bus": 6, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 138, "van": 20, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 6, "voi": 0}, "R": {"car": 0, "van": 0, "hgv": 2, "artic": 0, "bus": 0, "moto": 0, "cycle": 16, "voi": 4}}, "E": {"L": {"car": 10, "van": 2, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 126, "van": 42, "hgv": 8, "artic": 2, "bus": 2, "moto": 2, "cycle": 2, "voi": 0}, "R": {"car": 24, "van": 4, "hgv": 0, "artic": 0, "bus": 4, "moto": 0, "cycle": 0, "voi": 0}}, "S": {"L": {"car": 98, "van": 10, "hgv": 2, "artic": 0, "bus": 0, "moto": 2, "cycle": 0, "voi": 0}, "T": {"car": 110, "van": 24, "hgv": 0, "artic": 4, "bus": 2, "moto": 0, "cycle": 14, "voi": 4}, "R": {"car": 8, "van": 4, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}}, "W": {"L": {"car": 14, "van": 8, "hgv": 0, "artic": 0, "bus": 2, "moto": 0, "cycle": 0, "voi": 0}, "T": {"car": 124, "van": 20, "hgv": 4, "artic": 0, "bus": 0, "moto": 0, "cycle": 2, "voi": 0}, "R": {"car": 98, "van": 20, "hgv": 0, "artic": 0, "bus": 0, "moto": 0, "cycle": 0, "voi": 0}}}, "plan": {"A": 34, "B": 26, "C": 21, "D": 9}, "obsCycle": 120, "obs": {"queue": {"E": 5.4, "N": 5.3, "S": 3.2, "W": 6.1}, "bus": {"E": 33, "N": 48, "S": 38, "W": 47}, "busAll": 41, "pcuh": {"E": 245, "N": 210, "S": 278, "W": 298}}, "peds": {"N": 0, "E": 12, "S": 44, "W": 102, "X": 100}}}, "meta": {"ig": {"AB": 6.0, "BC": 3.0, "CD": 7.0, "DA": 12.0}, "pedDelay": {"X": 92, "E": 26, "N": 46, "S": 39, "W": 44}}};
+const ORDER=['2','3','4','5','6'];
+const SHORT={'2':'Wed AM','3':'Fri noon','4':'Wed PM','5':'Sat AM','6':'Mon noon'};
+const STAGES=['A','B','C','D'];
+const STAGE_NAME={A:'West Mains + Mayfield S left',B:'Mayfield N & S',C:'Esslemont Rd',D:'Pedestrians (all-red)'};
+const STAGE_COL={A:'--stA',B:'--stB',C:'--stC',D:'--stD'};
+const IG=DATA.meta.ig; // AB BC CD DA
+const AMBER=3, REDAMBER=2;
+
+// ---------- geometry (metres, y up, origin = junction centre) ----------
+const WL=3.2, CYC=1.5;
+const ARMS={
+  N:{ang:112,R:22,nIn:1,nOut:1,name:'Mayfield Rd'},
+  E:{ang:31, R:21,nIn:1,nOut:1,name:'Esslemont Rd'},
+  S:{ang:301,R:24,nIn:2,nOut:1,name:'Mayfield Rd'},
+  W:{ang:176,R:23,nIn:2,nOut:1,name:'West Mains Rd'}};
+for(const k in ARMS){const a=ARMS[k];const t=a.ang*Math.PI/180;a.k=k;a.d=[Math.cos(t),Math.sin(t)];a.nL=[a.d[1],-a.d[0]];
+  a.wIn=a.nIn*WL+CYC; a.wOut=a.nOut*WL+CYC;}
+const DEST={N:{L:'E',T:'S',R:'W'},E:{L:'S',T:'W',R:'N'},S:{L:'W',T:'N',R:'E'},W:{L:'N',T:'E',R:'S'}};
+const LANE={N:{L:0,T:0,R:0},E:{L:0,T:0,R:0},S:{L:1,T:0,R:0},W:{L:1,T:1,R:0}};
+const GROUP_STAGES={W:['A'],SL:['A','B'],SM:['B'],N:['B'],E:['C']};
+function groupOf(arm,lane){if(arm==='S')return lane===1?'SL':'SM';return arm;}
+const LIN=230, LOUT=200, V0=8.9;
+const add=(p,q)=>[p[0]+q[0],p[1]+q[1]], sc=(p,s)=>[p[0]*s,p[1]*s];
+const P=(a,r,off)=>[a.d[0]*r+a.nL[0]*off,a.d[1]*r+a.nL[1]*off];
+
+function bezier(P0,t0,P3,t3,k){
+  const P1=add(P0,sc(t0,k)),P2=add(P3,sc(t3,-k));const n=36,pts=[];let cum=0,prev=null;
+  for(let i=0;i<=n;i++){const u=i/n,m=1-u;const x=m*m*m*P0[0]+3*m*m*u*P1[0]+3*m*u*u*P2[0]+u*u*u*P3[0];const y=m*m*m*P0[1]+3*m*m*u*P1[1]+3*m*u*u*P2[1]+u*u*u*P3[1];
+    if(prev)cum+=Math.hypot(x-prev[0],y-prev[1]);pts.push([x,y,cum]);prev=[x,y];}
+  return {pts,len:cum};
+}
+function connAt(c,s){const p=c.pts;if(s<=0){const a=Math.atan2(p[1][1]-p[0][1],p[1][0]-p[0][0]);return [p[0][0]+Math.cos(a)*s,p[0][1]+Math.sin(a)*s,a];}
+  let lo=0,hi=p.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(p[m][2]<s)lo=m;else hi=m;}
+  const a=p[lo],b=p[hi],f=(s-a[2])/((b[2]-a[2])||1);return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,Math.atan2(b[1]-a[1],b[0]-a[0])];}
+
+const ROUTES={};
+function route(arm,mv,bike){
+  const key=arm+mv+(bike?'b':'');if(ROUTES[key])return ROUTES[key];
+  const a=ARMS[arm],b=ARMS[DEST[arm][mv]],lane=LANE[arm][mv];
+  const offIn=bike?a.nIn*WL+0.75:(lane+0.5)*WL, rStop=bike?a.R-4:a.R, offOut=bike?b.nOut*WL+0.75:0.5*WL;
+  const P0=P(a,rStop,offIn), P3=P(b,b.R,-offOut);
+  const dist=Math.hypot(P3[0]-P0[0],P3[1]-P0[1]);
+  const conn=bezier(P0,sc(a.d,-1),P3,b.d,dist*(mv==='T'?0.33:0.45));
+  const r={key,arm,mv,bike,lane,a,b,offIn,rStop,offOut,conn,Lc:conn.len,group:groupOf(arm,lane),dest:b.k,
+    gw:mv==='R'&&(arm==='N'||arm==='S')&&!bike?LIN+conn.len*0.48:null,
+    vTurn:mv==='T'?8.6:mv==='L'?5.8:6.6};
+  ROUTES[key]=r;return r;
+}
+function posAt(r,s){
+  if(s<LIN){const rr=r.rStop+LIN-s;const p=P(r.a,rr,r.offIn);return [p[0],p[1],Math.atan2(-r.a.d[1],-r.a.d[0])];}
+  if(s<LIN+r.Lc)return connAt(r.conn,s-LIN);
+  const rr=r.b.R+(s-LIN-r.Lc);const p=P(r.b,rr,-r.offOut);return [p[0],p[1],Math.atan2(r.b.d[1],r.b.d[0])];
+}
+
+// ---------- classes ----------
+const CLS={car:{len:4.3,wid:1.8,pcu:1,a:2.1},van:{len:5.3,wid:2.0,pcu:1,a:1.8},hgv:{len:9,wid:2.5,pcu:2.3,a:1.1},artic:{len:15,wid:2.55,pcu:2.8,a:0.7},
+  bus:{len:11.5,wid:2.55,pcu:2,a:1.1},moto:{len:2.1,wid:0.8,pcu:0.5,a:2.2},cycle:{len:1.8,wid:0.65,pcu:0.2,a:1.0,bike:1,v0:5.0},voi:{len:1.8,wid:0.65,pcu:0.2,a:1.1,bike:1,v0:5.6}};
+const CAR_COLS=['#E8E6E1','#9AA3AD','#2F5D8A','#B23A3A','#3B3E44','#C9B48A','#6E8B5A','#D6D8DA','#5A6B7C'];
+const BCOL={van:'#F4F4F0',hgv:'#E39B2D',artic:'#D27A1E',bus:'#8C1D2B',moto:'#15171A'};
+
+// ---------- state ----------
+let S, rng;
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+const state={sess:'2',speed:1,playing:!matchMedia('(prefers-reduced-motion: reduce)').matches,zoom:1,plan:null,demand:1};
+
+function planSegments(pl){const seq=[['A',pl.A],['ig','AB'],['B',pl.B],['ig','BC'],['C',pl.C],['ig','CD'],['D',pl.D],['ig','DA']];
+  let t=0;const segs=[];for(const [k,v] of seq){const dur=k==='ig'?IG[v]:v;segs.push({k,dur,t0:t,t1:t+dur});t+=dur;}return {segs,C:t};}
+let PLAN;
+function stageAt(t){const tc=((t%PLAN.C)+PLAN.C)%PLAN.C;for(const s of PLAN.segs)if(tc>=s.t0&&tc<s.t1)return {seg:s,tc};return {seg:PLAN.segs[0],tc};}
+function groupState(g,t){
+  const st=GROUP_STAGES[g];const C=PLAN.C;const tc=((t%C)+C)%C;
+  for(const s of PLAN.segs){if(!st.includes(s.k))continue;
+    for(const off of [-C,0,C]){const a=s.t0+off,b=s.t1+off;
+      if(tc>=a&&tc<b)return 'G';}}
+  for(const s of PLAN.segs){if(!st.includes(s.k))continue;
+    for(const off of [-C,0,C]){const a=s.t0+off,b=s.t1+off;
+      if(tc>=b&&tc<b+AMBER)return 'A';if(tc>=a-REDAMBER&&tc<a)return 'RA';}}
+  return 'R';
+}
+function pedState(t){const {seg}=stageAt(t);if(seg.k==='D')return 'G';if(seg.k==='ig'&&seg===PLAN.segs[7])return 'F';return 'R';}
+
+// crossings
+const CROSS={};
+(function(){
+  for(const k in ARMS){const a=ARMS[k];const r=a.R-7;CROSS[k]={key:k,p0:P(a,r,a.wIn+0.4),p1:P(a,r,-(a.wOut+0.4))};}
+  function corner(k1,k2){const A=CROSS[k1],B=CROSS[k2];let best=null;
+    for(const p of [A.p0,A.p1])for(const q of [B.p0,B.p1]){const d=Math.hypot(p[0]-q[0],p[1]-q[1]);if(!best||d<best.d)best={d,m:[(p[0]+q[0])/2,(p[1]+q[1])/2]};}
+    const m=best.m,l=Math.hypot(m[0],m[1]);return [m[0]+m[0]/l*1.5,m[1]+m[1]/l*1.5];}
+  CROSS.X={key:'X',p0:corner('S','W'),p1:corner('N','E')};
+  for(const k in CROSS){const c=CROSS[k];c.len=Math.hypot(c.p1[0]-c.p0[0],c.p1[1]-c.p0[1]);c.u=[(c.p1[0]-c.p0[0])/c.len,(c.p1[1]-c.p0[1])/c.len];}
+})();
+const CROSS_NAME={X:'Diagonal toucan',W:'West Mains Rd (toucan)',S:'Mayfield Rd (south)',N:'Mayfield Rd (north)',E:'Esslemont Rd'};
+
+function newSim(seed){
+  rng=mulberry(seed||7);
+  S={t:0,veh:[],pend:{},peds:[],wait:{},prevG:{},stat:null,id:0};
+  for(const k in CROSS)S.wait[k]=[[],[]];
+  resetStats();
+}
+function resetStats(){
+  const z=()=>({N:0,E:0,S:0,W:0});
+  S.stat={t0:S.t,qSum:z(),qN:z(),bSum:z(),bN:z(),pcu:z(),dSum:z(),dN:z(),pw:{N:0,E:0,S:0,W:0,X:0},pwN:{N:0,E:0,S:0,W:0,X:0}};
+}
+
+function streams(arm){const f=DATA.sessions[state.sess].flows[arm];const out=[];let tot=0;
+  for(const mv in f)for(const c in f[mv]){const r=f[mv][c]*state.demand;if(r>0){out.push({mv,c,r});tot+=r;}}return {out,tot};}
+let STREAMS={};
+function buildStreams(){STREAMS={};for(const k in ARMS)STREAMS[k]=streams(k);}
+
+function spawnVehicle(arm,mv,c,t0){
+  const bike=!!CLS[c].bike;const r=route(arm,mv,bike);
+  const col=c==='car'?CAR_COLS[Math.floor(rng()*CAR_COLS.length)]:c==='cycle'?'cyc':c==='voi'?'voi':BCOL[c];
+  return {id:++S.id,c,cl:CLS[c],r,s:0,v:V0*0.9,t0,col,crossed:false,tStop:null,bike};
+}
+function laneKey(r){return r.bike?r.arm+'b':r.arm+r.lane;}
+
+function step(dt){
+  const t=S.t;
+  // arrivals
+  for(const arm in ARMS){const st=STREAMS[arm];if(rng()<st.tot/3600*dt){let x=rng()*st.tot;let pick=st.out[0];for(const o of st.out){x-=o.r;if(x<=0){pick=o;break;}}
+      const bike=!!CLS[pick.c].bike;const r=route(arm,pick.mv,bike);const lk=laneKey(r);(S.pend[lk]=S.pend[lk]||[]).push({mv:pick.mv,c:pick.c,arm,t0:t});}}
+  // group lists
+  const inG={},outG={};
+  for(const v of S.veh){const r=v.r;if(v.s<LIN+r.Lc){(inG[laneKey(r)]=inG[laneKey(r)]||[]).push(v);}else{const k=r.dest+(r.bike?'b':'');(outG[k]=outG[k]||[]).push(v);}}
+  for(const k in inG)inG[k].sort((a,b)=>a.s-b.s);
+  for(const k in outG)outG[k].sort((a,b)=>a.s-a.r.Lc-(b.s-b.r.Lc));
+  // release pending
+  for(const lk in S.pend){const q=S.pend[lk];if(!q.length)continue;const list=inG[lk]||[];const last=list[0];const nv=CLS[q[0].c];
+    if(!last||last.s-last.cl.len>nv.len+3){const p=q.shift();const v=spawnVehicle(p.arm,p.mv,p.c,p.t0);v.s=0;v.v=last?Math.min(V0,last.v+1):V0*0.9;S.veh.push(v);(inG[lk]=inG[lk]||[]).unshift(v);}}
+  // signal transitions (end-of-red queue)
+  const stg=stageAt(t).seg.k;
+  for(const g in GROUP_STAGES){const gs=groupState(g,t);const was=S.prevG[g];
+    if(gs==='G'&&was&&was!=='G'){let arm=g==='SL'||g==='SM'?'S':g;
+      if(g==='SM')continue; if(g==='SL'&&stg!=='A')continue;
+      let n=0;for(const v of S.veh){if(v.bike||v.r.arm!==arm||v.s>=LIN)continue;if(v.v<1.5&&LIN-v.s<260)n++;}
+      for(const lk in S.pend)if(lk[0]===arm&&lk[1]!=='b')n+=S.pend[lk].length;
+      if(t-S.stat.t0>5){S.stat.qSum[arm]+=n;S.stat.qN[arm]++;}}
+    S.prevG[g]=gs;}
+  // dynamics
+  const IDM={T:1.0,s0:1.7,b:2.6};
+  for(const v of S.veh){
+    const r=v.r,cl=v.cl;let v0=cl.v0||V0;
+    const inConn=v.s>=LIN&&v.s<LIN+r.Lc;
+    if(!r.bike&&r.mv!=='T'){if(inConn)v0=r.vTurn;else if(v.s<LIN&&v.s>LIN-22)v0=r.vTurn+(v0-r.vTurn)*(LIN-v.s)/22;}
+    let acc=cl.a*(1-Math.pow(v.v/v0,4));
+    const lim=(gap,vl)=>{const ss=IDM.s0+Math.max(0,v.v*IDM.T+v.v*(v.v-vl)/(2*Math.sqrt(cl.a*IDM.b)));const g=Math.max(gap,0.05);return cl.a*(1-Math.pow(v.v/v0,4)-(ss/g)**2);};
+    // leader
+    if(v.s<LIN+r.Lc){const list=inG[laneKey(r)];const i=list.indexOf(v);
+      for(let j=i+1;j<list.length;j++){const L=list[j];
+        if(L.r!==r){if(inConn)continue;if(L.s>LIN+3)continue;}
+        acc=Math.min(acc,lim(L.s-L.cl.len-v.s,L.v));break;}
+      if(v.s>LIN-35){const ol=outG[r.dest+(r.bike?'b':'')];if(ol&&ol.length){const L=ol[0];const so=L.s-L.r.Lc-LIN;acc=Math.min(acc,lim((LIN+r.Lc-v.s)+so-L.cl.len,L.v));}}
+      // signal
+      if(v.s<LIN){const gs=groupState(r.group,t);const dist=LIN-v.s;
+        let stop=false;if(gs==='R'||gs==='RA')stop=dist>0.4;else if(gs==='A')stop=dist>v.v*v.v/(2*3.0)+0.6;
+        if(stop)acc=Math.min(acc,lim(dist-0.3,0));}
+      // give way (opposed right turn)
+      if(r.gw&&v.s<r.gw&&!canTurn(v,inG,t))acc=Math.min(acc,lim(r.gw-v.s,0));
+    }else{const ol=outG[r.dest+(r.bike?'b':'')];const i=ol.indexOf(v);if(i+1<ol.length){const L=ol[i+1];acc=Math.min(acc,lim((L.s-L.r.Lc)-L.cl.len-(v.s-r.Lc),L.v));}}
+    v.acc=Math.max(-9,acc);
+  }
+  for(const v of S.veh){const pre=v.s;v.v=Math.max(0,v.v+v.acc*dt);v.s+=v.v*dt;
+    if(!v.crossed&&v.s<LIN&&v.v<0.3&&v.tStop===null&&LIN-v.s<200)v.tStop=t;
+    if(!v.crossed&&v.s>=LIN){v.crossed=true;const arm=v.r.arm;const st=S.stat;
+      if(t-st.t0>5){st.pcu[arm]+=v.cl.pcu;
+        if(!v.bike){st.dSum[arm]+=Math.max(0,(t-v.t0)-LIN/V0);st.dN[arm]++;}
+        if(v.c==='bus'&&v.tStop!==null){st.bSum[arm]+=t-v.tStop;st.bN[arm]++;}}}}
+  S.veh=S.veh.filter(v=>v.s<LIN+v.r.Lc+LOUT);
+  // pedestrians
+  const ps=pedState(t);const pf=DATA.sessions[state.sess].peds;
+  for(const k in CROSS){const rate=(pf[k]||0);if(rate>0&&rng()<rate/3600*dt){const side=rng()<0.5?0:1;const p={k,side,ta:t,j:(rng()-0.5)*2.2,back:0.6+rng()*1.6,sp:1.15+rng()*0.45,u:0};
+      if(ps==='G')startPed(p,t);else S.wait[k][side].push(p);}}
+  if(ps==='G'){for(const k in S.wait)for(const side of [0,1]){const w=S.wait[k][side];while(w.length)startPed(w.pop(),t);}}
+  for(const p of S.peds)p.u+=p.sp*dt;
+  S.peds=S.peds.filter(p=>p.u<CROSS[p.k].len+1);
+  S.t+=dt;
+}
+function startPed(p,t){if(t-S.stat.t0>5){S.stat.pw[p.k]+=t-p.ta;S.stat.pwN[p.k]++;}p.u=-p.back;S.peds.push(p);}
+function canTurn(v,inG,t){
+  const opp=v.r.arm==='N'?'S':'N';
+  const lists=[];for(const lk in inG)if(lk[0]===opp&&lk[1]!=='b')lists.push(inG[lk]);
+  for(const list of lists)for(const o of list){const r=o.r;if(r.mv==='R')continue;
+    if(o.s>=LIN){if(o.s<LIN+r.Lc*0.75)return false;continue;}
+    const gs=groupState(r.group,t);const dist=LIN-o.s;
+    let goes=gs==='G'||(gs==='A'&&dist<=o.v*o.v/6+0.6);if(!goes)continue;
+    if((dist+9)/Math.max(o.v,3.2)<4.5)return false;}
+  return true;
+}
+
+// ---------- rendering ----------
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+let CSSV={};function readTheme(){const cs=getComputedStyle(document.documentElement);for(const n of ['verge','pave','asphalt','asphalt-line','build','build-kb','map-label','ped','cyc','voi','marking','go','stop','amber','surface','ink','stD'])CSSV[n]=cs.getPropertyValue('--'+n).trim();bgCache=null;}
+let W=0,H=0,DPR=1,SCL=1,bgCache=null;
+const VIEW=[60,85,130];
+function resize(){const b=cv.getBoundingClientRect();DPR=Math.min(2,window.devicePixelRatio||1);W=b.width;H=b.height;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);SCL=Math.min(W,H)/(2*VIEW[state.zoom]);bgCache=null;}
+const X=x=>W/2+x*SCL, Y=y=>H/2-y*SCL;
+function poly(c,pts){c.beginPath();pts.forEach((p,i)=>i?c.lineTo(X(p[0]),Y(p[1])):c.moveTo(X(p[0]),Y(p[1])));c.closePath();}
+function hull(pts){pts=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];
+  for(const p of pts){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p);}
+  for(const p of pts.reverse()){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p);}
+  return lo.slice(0,-1).concat(up.slice(0,-1));}
+function distToArms(p){let m=1e9;for(const k in ARMS){const a=ARMS[k];const along=p[0]*a.d[0]+p[1]*a.d[1];const lat=p[0]*a.nL[0]+p[1]*a.nL[1];
+  let d;if(along<0)d=Math.hypot(p[0],p[1]);else d=lat>0?lat-a.wIn:-lat-a.wOut;m=Math.min(m,d);}return m;}
+
+function drawBackground(){
+  const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const g=c.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);
+  g.fillStyle=CSSV.verge;g.fillRect(0,0,W,H);
+  // buildings (houses) and King's Buildings
+  const R=mulberry(11);g.fillStyle=CSSV.build;
+  const kbAng=(301-360+176)/2*Math.PI/180; // bisector S/W
+  for(let gx=-160;gx<=160;gx+=17)for(let gy=-160;gy<=160;gy+=17){
+    const cx=gx+(R()-0.5)*5,cy=gy+(R()-0.5)*5,ww=8+R()*6,hh=7+R()*5,rot=0.35+(R()-0.5)*0.2;
+    const ang=Math.atan2(cy,cx)*180/Math.PI;if(Math.hypot(cx,cy)<28)continue;
+    if(ang<-120&&ang>-180+2||ang>176)continue; // KB campus wedge
+    const pts=[[-ww/2,-hh/2],[ww/2,-hh/2],[ww/2,hh/2],[-ww/2,hh/2]].map(([x,y])=>[cx+x*Math.cos(rot)-y*Math.sin(rot),cy+x*Math.sin(rot)+y*Math.cos(rot)]);
+    if(Math.min(...pts.map(distToArms))<9)continue;poly(g,pts);g.fill();}
+  g.fillStyle=CSSV['build-kb'];
+  const kb=[[-38,-30],[-24,-62],[-60,-120],[-140,-120],[-140,-38]];poly(g,kb);g.fill();
+  // pavements
+  g.fillStyle=CSSV.pave;
+  for(const k in ARMS){const a=ARMS[k];poly(g,[P(a,0,a.wIn+3.5),P(a,400,a.wIn+3.5),P(a,400,-a.wOut-3.5),P(a,0,-a.wOut-3.5)]);g.fill();}
+  const hp=[];for(const k in ARMS){const a=ARMS[k];hp.push(P(a,a.R-2,a.wIn+3.5),P(a,a.R-2,-a.wOut-3.5));}poly(g,hull(hp));g.fill();
+  // carriageway
+  g.fillStyle=CSSV.asphalt;
+  for(const k in ARMS){const a=ARMS[k];poly(g,[P(a,0,a.wIn),P(a,400,a.wIn),P(a,400,-a.wOut),P(a,0,-a.wOut)]);g.fill();}
+  const ha=[];for(const k in ARMS){const a=ARMS[k];ha.push(P(a,a.R-9.5,a.wIn),P(a,a.R-9.5,-a.wOut));}poly(g,hull(ha));g.fill();
+  // markings
+  const line=(p,q,w,dash,col)=>{g.strokeStyle=col||CSSV['asphalt-line'];g.lineWidth=w*SCL;g.setLineDash(dash?dash.map(d=>d*SCL):[]);g.beginPath();g.moveTo(X(p[0]),Y(p[1]));g.lineTo(X(q[0]),Y(q[1]));g.stroke();};
+  for(const k in ARMS){const a=ARMS[k];
+    // cycle lanes (green surfacing) on approach and exit
+    g.fillStyle='rgba(47,163,91,0.55)';
+    poly(g,[P(a,a.R,a.wIn),P(a,a.R+40,a.wIn),P(a,a.R+40,a.wIn-CYC),P(a,a.R,a.wIn-CYC)]);g.fill();
+    // ASL box
+    g.fillStyle='rgba(47,163,91,0.45)';poly(g,[P(a,a.R-4,a.wIn),P(a,a.R,a.wIn),P(a,a.R,0),P(a,a.R-4,0)]);g.fill();
+    line(P(a,a.R+40,a.wIn-CYC),P(a,400,a.wIn-CYC),0.12,[1,2]);
+    line(P(a,a.R,-a.wOut+CYC),P(a,400,-a.wOut+CYC),0.12,[1,2]);
+    // centre line + lane lines
+    line(P(a,a.R,0),P(a,400,0),0.15,[4,5]);
+    line(P(a,a.R,0),P(a,a.R+25,0),0.15,[6,1.5]);
+    for(let i=1;i<a.nIn;i++)line(P(a,a.R,i*WL),P(a,a.R+45,i*WL),0.15,[3,3]);
+    // stop lines
+    line(P(a,a.R,0),P(a,a.R,a.wIn-CYC),0.3);
+    line(P(a,a.R-4,0),P(a,a.R-4,a.wIn),0.3);
+    // crossing studs
+    const c=CROSS[k];for(const o of [-1.4,1.4]){const n=[-c.u[1],c.u[0]];line(add(c.p0,sc(n,o)),add(c.p1,sc(n,o)),0.3,[0.3,0.9]);}
+  }
+  {const c=CROSS.X;g.fillStyle='rgba(47,163,91,0.18)';const n=[-c.u[1],c.u[0]];poly(g,[add(c.p0,sc(n,2.2)),add(c.p1,sc(n,2.2)),add(c.p1,sc(n,-2.2)),add(c.p0,sc(n,-2.2))]);g.fill();
+    for(const o of [-2,2])line(add(c.p0,sc(n,o)),add(c.p1,sc(n,o)),0.3,[0.3,0.9]);}
+  // turn arrows on multi-lane approaches
+  g.fillStyle=CSSV['asphalt-line'];
+  const arrow=(a,lane,kind)=>{const p=P(a,a.R+14,(lane+0.5)*WL);const ang=Math.atan2(-a.d[1],-a.d[0]);g.save();g.translate(X(p[0]),Y(p[1]));g.rotate(-ang);const s=SCL;
+    g.beginPath();g.moveTo(-3*s,-0.12*s);g.lineTo(0.6*s,-0.12*s);g.lineTo(0.6*s,0.12*s);g.lineTo(-3*s,0.12*s);g.fill();
+    const tip=(dx,dy,rot)=>{g.save();g.translate(dx*s,dy*s);g.rotate(rot);g.beginPath();g.moveTo(0.9*s,0);g.lineTo(0,-0.45*s);g.lineTo(0,0.45*s);g.closePath();g.fill();g.restore();};
+    if(kind.includes('T'))tip(0.6,0,0);
+    if(kind.includes('L')){g.fillRect(0,-0.12*s-0,0.25*s,-1.0*s);tip(0.12,-1.0,-Math.PI/2);}
+    if(kind.includes('R')){g.fillRect(0,0.12*s,0.25*s,1.0*s);tip(0.12,1.0,Math.PI/2);}
+    g.restore();};
+  arrow(ARMS.S,1,'L');arrow(ARMS.S,0,'TR');arrow(ARMS.W,1,'TL');arrow(ARMS.W,0,'R');arrow(ARMS.N,0,'LTR');arrow(ARMS.E,0,'LTR');
+  // labels
+  g.fillStyle=CSSV['map-label'];g.font=`600 ${Math.max(11,Math.min(14,SCL*3.4))}px Overpass, system-ui, sans-serif`;g.textAlign='center';g.textBaseline='middle';
+  for(const k in ARMS){const a=ARMS[k];const r=VIEW[state.zoom]*0.62;const p=P(a,r,-(a.wOut+6.5));let ang=Math.atan2(a.d[1],a.d[0]);let rot=-ang;if(Math.cos(ang)<0)rot+=Math.PI;
+    g.save();g.translate(X(p[0]),Y(p[1]));g.rotate(rot);g.fillText(a.name.toUpperCase()+(k==='N'?' (N)':k==='S'?' (S)':''),0,0);g.restore();}
+  g.font=`600 ${Math.max(11,Math.min(13,SCL*3.2))}px Overpass, system-ui, sans-serif`;g.globalAlpha=0.8;{const tw=g.measureText("KING'S BUILDINGS").width;g.fillText("KING'S BUILDINGS",Math.max(tw/2+10,X(-62)),Math.min(H-60,Y(-58)));}g.globalAlpha=1;
+  // north arrow
+  g.save();g.translate(W-26,H-58);g.fillStyle=CSSV['map-label'];g.beginPath();g.moveTo(0,-14);g.lineTo(7,6);g.lineTo(0,2);g.lineTo(-7,6);g.closePath();g.fill();g.font='700 11px Overpass, system-ui';g.fillText('N',0,15);g.restore();
+  // scale bar
+  g.save();const sb=20*SCL;g.translate(W-26-sb,H-26);g.fillStyle=CSSV['map-label'];g.fillRect(0,0,sb,3);g.font='600 10.5px Overpass Mono, monospace';g.textAlign='center';g.fillText('20 m',sb/2,-8);g.restore();
+  bgCache=c;
+}
+function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function draw(){
+  if(!bgCache)drawBackground();
+  ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(bgCache,0,0);ctx.setTransform(DPR,0,0,DPR,0,0);
+  const t=S.t;
+  // signal bars + heads
+  const col={G:CSSV.go,A:CSSV.amber,RA:CSSV.amber,R:CSSV.stop};
+  for(const k in ARMS){const a=ARMS[k];for(let i=0;i<a.nIn;i++){const gs=groupState(groupOf(k,i),t);const p=P(a,a.R+0.6,i*WL+0.25),q=P(a,a.R+0.6,(i+1)*WL-0.25);
+    ctx.strokeStyle=col[gs];ctx.lineWidth=Math.max(2,0.55*SCL);ctx.beginPath();ctx.moveTo(X(p[0]),Y(p[1]));ctx.lineTo(X(q[0]),Y(q[1]));ctx.stroke();
+    const h=P(a,a.R+0.6,a.wIn+1.4+i*1.6);ctx.fillStyle='#15171A';ctx.beginPath();ctx.arc(X(h[0]),Y(h[1]),Math.max(4,0.75*SCL),0,7);ctx.fill();ctx.fillStyle=col[gs];ctx.beginPath();ctx.arc(X(h[0]),Y(h[1]),Math.max(2.6,0.5*SCL),0,7);ctx.fill();}}
+  // ped signals
+  const pst=pedState(t);
+  for(const k in CROSS){const c=CROSS[k];for(const p of [c.p0,c.p1]){ctx.fillStyle='#15171A';ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),Math.max(3.2,0.6*SCL),0,7);ctx.fill();
+    ctx.fillStyle=pst==='G'?CSSV.go:pst==='F'?((Math.floor(t*2)%2)?CSSV.go:'#15171A'):CSSV.stop;ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),Math.max(2,0.38*SCL),0,7);ctx.fill();}}
+  // vehicles
+  for(const v of S.veh){const r=v.r,cl=v.cl;const f=posAt(r,v.s),b=posAt(r,v.s-cl.len);const cx=(f[0]+b[0])/2,cy=(f[1]+b[1])/2;const ang=Math.atan2(f[1]-b[1],f[0]-b[0]);
+    ctx.save();ctx.translate(X(cx),Y(cy));ctx.rotate(-ang);const L=cl.len*SCL,Wd=cl.wid*SCL;
+    if(v.bike){ctx.strokeStyle=v.col==='cyc'?CSSV.cyc:CSSV.voi;ctx.lineWidth=Math.max(1.6,0.35*SCL);ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-L/2,0);ctx.lineTo(L/2,0);ctx.stroke();
+      ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.arc(0,0,Math.max(1.8,0.32*SCL),0,7);ctx.fill();}
+    else{ctx.fillStyle=v.col;rrect(ctx,-L/2,-Wd/2,L,Wd,Math.min(Wd*0.3,0.5*SCL));ctx.fill();ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=0.8;ctx.stroke();
+      if(v.c==='bus'){ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillRect(-L/2+0.6*SCL,-Wd*0.18,L-1.2*SCL,Wd*0.36);}
+      else if(v.c==='artic'||v.c==='hgv'){ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(L/2-2.2*SCL,-Wd/2,0.25*SCL,Wd);}
+      else if(v.c!=='moto'){ctx.fillStyle='rgba(20,30,40,.55)';ctx.fillRect(L/2-L*0.36,-Wd*0.38,L*0.13,Wd*0.76);}}
+    ctx.restore();}
+  // pedestrians
+  ctx.fillStyle=CSSV.ped;ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=0.7;const pr=Math.max(1.9,0.33*SCL);
+  const pdot=(x,y)=>{ctx.beginPath();ctx.arc(X(x),Y(y),pr,0,7);ctx.fill();ctx.stroke();};
+  for(const k in S.wait){const c=CROSS[k];const n=[-c.u[1],c.u[0]];for(const side of [0,1]){const base=side?c.p1:c.p0;const out=side?c.u:sc(c.u,-1);
+    for(const p of S.wait[k][side])pdot(base[0]+out[0]*p.back+n[0]*p.j,base[1]+out[1]*p.back+n[1]*p.j);}}
+  for(const p of S.peds){const c=CROSS[p.k];const n=[-c.u[1],c.u[0]];const u=p.side?c.len-p.u:p.u;pdot(c.p0[0]+c.u[0]*u+n[0]*p.j*0.6,c.p0[1]+c.u[1]*u+n[1]*p.j*0.6);}
+  // off-screen queue badges
+  const VR=VIEW[state.zoom];
+  for(const k in ARMS){const a=ARMS[k];let n=0;for(const v of S.veh)if(!v.bike&&v.r.arm===k&&v.s<LIN&&v.v<1.5&&v.r.rStop+LIN-v.s>VR*1.05)n++;
+    for(const lk in S.pend)if(lk[0]===k&&lk[1]!=='b')n+=S.pend[lk].length;
+    if(n>0){let r=VR*0.93;const p=P(a,r,a.nIn*WL/2);let x=Math.min(W-34,Math.max(34,X(p[0]))),y=Math.min(H-40,Math.max(20,Y(p[1])));
+      const txt='+'+n+' queued';ctx.font='600 12px Overpass Mono, monospace';const tw=ctx.measureText(txt).width+12;ctx.fillStyle=CSSV.stop;rrect(ctx,x-tw/2,y-10,tw,20,6);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,x,y+1);}}
+}
+
+// ---------- UI ----------
+const $=id=>document.getElementById(id);
+function fmt(s){s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function buildSess(){const el=$('sess');el.innerHTML='';for(const k of ORDER){const d=DATA.sessions[k];const b=document.createElement('button');b.setAttribute('aria-pressed',k===state.sess);
+  b.innerHTML=`<b>${SHORT[k]}</b><small>${d.day}</small>`;b.onclick=()=>{state.sess=k;loadSession();};el.appendChild(b);}}
+function buildSpeed(){const el=$('speed');el.innerHTML='';for(const s of [1,2,5,10,20]){const b=document.createElement('button');b.textContent=s+'×';b.setAttribute('aria-pressed',s===state.speed);b.onclick=()=>{state.speed=s;buildSpeed();};el.appendChild(b);}}
+const SL_DEF={A:[8,70],B:[8,70],C:[6,60],D:[4,30]};
+function buildSliders(){const el=$('sliders');el.innerHTML='';
+  for(const st of STAGES){const d=document.createElement('div');d.className='slider';
+    d.innerHTML=`<label for="g${st}"><i style="background:var(${STAGE_COL[st]})"></i><b>${st}</b>&nbsp;${STAGE_NAME[st]}</label><output id="o${st}">${state.plan[st]} s</output><input type="range" id="g${st}" min="${SL_DEF[st][0]}" max="${SL_DEF[st][1]}" value="${state.plan[st]}">`;
+    el.appendChild(d);d.querySelector('input').oninput=e=>{state.plan[st]=+e.target.value;$('o'+st).textContent=state.plan[st]+' s';applyPlan(true);};}}
+function buildTimeline(){const el=$('tl');el.querySelectorAll('.seg').forEach(n=>n.remove());const nd=$('needle');
+  for(const s of PLAN.segs){const d=document.createElement('div');d.className='seg'+(s.k==='ig'?' ig':'');d.style.flex=s.dur+' 0 0';if(s.k!=='ig'){d.style.background=`var(${STAGE_COL[s.k]})`;d.textContent=s.dur>=7?s.k+' '+s.dur+'s':s.k;}d.title=s.k==='ig'?'Intergreen '+s.dur+' s':STAGE_NAME[s.k]+' '+s.dur+' s';el.insertBefore(d,nd);}}
+function applyPlan(reset){PLAN=planSegments(state.plan);$('cycSim').textContent=Math.round(PLAN.C)+' s';buildTimeline();if(reset)resetStats();}
+function loadSession(){const d=DATA.sessions[state.sess];state.plan={...d.plan};$('cycObs').textContent=d.obsCycle+' s';buildSess();buildSliders();applyPlan(false);buildStreams();
+  newSim(Number(state.sess)*101);for(let i=0;i<1800;i++)step(0.1);resetStats();renderStats();}
+$('play').onclick=()=>{state.playing=!state.playing;$('play').textContent=state.playing?'Pause':'Play';};
+$('restart').onclick=()=>{newSim(Math.floor(Math.random()*1e6));for(let i=0;i<1800;i++)step(0.1);resetStats();renderStats();};
+$('resetPlan').onclick=()=>{state.plan={...DATA.sessions[state.sess].plan};buildSliders();applyPlan(true);};
+$('dem').oninput=e=>{state.demand=e.target.value/100;$('demOut').textContent=e.target.value+'%';buildStreams();resetStats();};
+$('zin').onclick=()=>{state.zoom=Math.max(0,state.zoom-1);resize();};
+$('zout').onclick=()=>{state.zoom=Math.min(VIEW.length-1,state.zoom+1);resize();};
+
+function cls(sim,obs){if(obs==null||!isFinite(sim))return '';const r=sim/obs;return r>1.3?'dev-hi':r<0.7?'dev-lo':'dev-ok';}
+function renderStats(){
+  const d=DATA.sessions[state.sess],st=S.stat,el=$('stats');const hrs=(S.t-st.t0)/3600;
+  $('since').textContent=hrs*3600<20?'Collecting… (stats restart after each change)':`Simulated ${fmt(S.t-st.t0)} since last change · ${Math.floor((S.t-st.t0)/PLAN.C)} cycles`;
+  const rows=[['N','Mayfield N'],['E','Esslemont'],['S','Mayfield S'],['W','West Mains']];
+  el.innerHTML=rows.map(([k,n])=>{const q=st.qN[k]?st.qSum[k]/st.qN[k]:NaN,b=st.bN[k]?st.bSum[k]/st.bN[k]:NaN,f=hrs>=300/3600?st.pcu[k]/hrs:NaN,dl=st.dN[k]?st.dSum[k]/st.dN[k]:NaN;
+    const oq=d.obs.queue[k],ob=d.obs.bus[k],of=d.obs.pcuh[k];const f1=x=>isFinite(x)?x.toFixed(1):'–',f0=x=>isFinite(x)?Math.round(x):'–';
+    return `<tr><td>${n}</td><td class="n">${oq??'–'}</td><td class="n sim ${cls(q,oq)}">${f1(q)}</td><td class="n">${ob??'–'}</td><td class="n sim ${cls(b,ob)}">${f0(b)}</td><td class="n">${of}</td><td class="n sim ${cls(f,of)}">${f0(f)}</td><td class="n sim">${f0(dl)}</td></tr>`;}).join('');
+  const pe=$('pstats');const pf=d.peds;
+  pe.innerHTML=['X','W','S','N','E'].map(k=>{const w=st.pwN[k]?st.pw[k]/st.pwN[k]:NaN;const o=DATA.meta.pedDelay[k];return `<tr><td>${CROSS_NAME[k]}</td><td class="n">${pf[k]||0}</td><td class="n">${o??'–'}</td><td class="n sim ${cls(w,o)}">${isFinite(w)?Math.round(w):'–'}</td></tr>`;}).join('');
+}
+
+// loop
+let last=performance.now(),acc=0,lastStats=0;
+function frame(now){const dtR=Math.min(0.1,(now-last)/1000);last=now;
+  if(state.playing){acc+=dtR*state.speed;let n=0;while(acc>=0.1&&n<400){step(0.1);acc-=0.1;n++;}if(n>=400)acc=0;}
+  draw();
+  const sg=stageAt(S.t);$('hudClock').innerHTML=`<b>${fmt(S.t)}</b> · ${SHORT[state.sess]}`;
+  $('hudStage').textContent=sg.seg.k==='ig'?'Intergreen':'Stage '+sg.seg.k+' · '+STAGE_NAME[sg.seg.k];
+  $('needle').style.left=(sg.tc/PLAN.C*100)+'%';
+  if(now-lastStats>500){renderStats();lastStats=now;}
+  requestAnimationFrame(frame);}
+readTheme();
+new ResizeObserver(resize).observe($('mapbox'));
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readTheme);
+new MutationObserver(readTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+document.fonts&&document.fonts.ready.then(()=>{bgCache=null;});
+buildSpeed();$('play').textContent=state.playing?'Pause':'Play';
+loadSession();resize();requestAnimationFrame(frame);
+</script>
+
+</body>
+</html>
